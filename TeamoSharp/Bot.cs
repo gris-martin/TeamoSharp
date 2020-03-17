@@ -30,9 +30,16 @@ namespace TeamoSharp
 
             //var configJson = JsonConvert.DeserializeObject<ConfigJson>(json);
 
+            var botToken = Environment.GetEnvironmentVariable("TEAMO_BOT_TOKEN");
+            if (botToken is null)
+            {
+                _logger.LogError("No bot token specified! Set the TEAMO_BOT_TOKEN environment to allow connecting the bot.");
+                Environment.Exit(-1);
+            }
+
             var config = new DiscordConfiguration
             {
-                Token = "NjU3ODk2MjExODkzODQ2MDI2.XmaVYQ.za8ITDGb7TC2ZyYlKYH3FZ8OZpI",
+                Token = Environment.GetEnvironmentVariable("TEAMO_BOT_TOKEN"),
                 UseInternalLogHandler = false
             };
 
