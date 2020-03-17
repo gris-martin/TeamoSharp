@@ -1,0 +1,35 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Migrations\20200312194401_InitialCreate.cs" />
+    <Compile Remove="Migrations\20200312194401_InitialCreate.Designer.cs" />
+    <Compile Remove="Migrations\20200312202129_RemoveClientAndAddGuild.cs" />
+    <Compile Remove="Migrations\20200312202129_RemoveClientAndAddGuild.Designer.cs" />
+    <Compile Remove="Migrations\20200312202401_InitialCommit.cs" />
+    <Compile Remove="Migrations\20200312202401_InitialCommit.Designer.cs" />
+    <Compile Remove="Migrations\20200312204702_MembersFix.cs" />
+    <Compile Remove="Migrations\20200312204702_MembersFix.Designer.cs" />
+    <Compile Remove="Migrations\20200312205033_AddMember.cs" />
+    <Compile Remove="Migrations\20200312205033_AddMember.Designer.cs" />
+    <Compile Remove="Migrations\20200315113400_InitialCommit.cs" />
+    <Compile Remove="Migrations\20200315113400_InitialCommit.Designer.cs" />
+    <Compile Remove="Migrations\20200315113442_InitialMigration.cs" />
+    <Compile Remove="Migrations\20200315113442_InitialMigration.Designer.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="DSharpPlus" Version="4.0.0-nightly-00668" />
+    <PackageReference Include="DSharpPlus.CommandsNext" Version="4.0.0-nightly-00668" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="3.1.2" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="3.1.2">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+</Project>

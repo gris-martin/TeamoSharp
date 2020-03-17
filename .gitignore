@@ -1,0 +1,10 @@
+# IDE files
+.vs/
+*.user
+
+# Built binaries
+bin/
+obj/
+
+# Database
+*.db
