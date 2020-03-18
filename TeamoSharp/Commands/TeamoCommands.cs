@@ -10,14 +10,12 @@ namespace TeamoSharp.Commands
     public class TeamoCommands : BaseCommandModule
     {
         private readonly ILogger _logger;
-        private readonly ITeamoService _teamoService;
         private readonly IPlayService _playService;
 
         public TeamoCommands(
-            ILogger<TeamoCommands> logger, ITeamoService teamoService, IPlayService playService)
+            ILogger<TeamoCommands> logger, IPlayService playService)
         {
             _logger = logger;
-            _teamoService = teamoService;
             _playService = playService;
         }
 
@@ -64,41 +62,5 @@ namespace TeamoSharp.Commands
                 return;
             }
         }
-
-
-        [Command("add")]
-        [Description("Add a random object to the database")]
-        public async Task Add(CommandContext ctx)
-        {
-            _logger.LogInformation($"{ctx.User.Username} created a new post in guild {ctx.Guild.Name}! Channel: {ctx.Channel.Name}!");
-            if (ctx is null)
-                throw new ArgumentNullException(nameof(ctx));
-
-            var post = new Models.PlayPost
-            {
-                DiscordChannelId = (long)ctx.Channel.Id,
-                DiscordMessageId = (long)ctx.Message.Id,
-                EndDate = new DateTime(2020, 03, 12, 22, 43, 25),
-                Game = "League of Legends",
-                MaxPlayers = 5
-            };
-            post.Members.Add(new Models.PlayMember());
-
-            await _teamoService.CreateNewPostAsync(post).ConfigureAwait(false);
-            //await _playDiscordService.CreateMessageAsync(post, ctx.Channel);
-        }
-
-        [Command("print")]
-        [Description("Print the first entry of the database")]
-        public async Task Print(CommandContext ctx)
-        {
-            if (ctx is null)
-                throw new ArgumentNullException(nameof(ctx));
-
-            ulong id = await _teamoService.GetMessageIdAsync().ConfigureAwait(false);
-            int numMessages = _teamoService.NumberOfMessages();
-            await ctx.Channel.SendMessageAsync($"{id}: {numMessages}").ConfigureAwait(false);
-        }
-
     }
 }

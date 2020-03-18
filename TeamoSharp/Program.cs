@@ -28,11 +28,7 @@ namespace TeamoSharp
 
                     services.AddLogging(ConfigureLogging);
 
-                    services.AddScoped<ITeamoService, TeamoService>();
-                    services.AddSingleton<ITimerService, TimerService>();
-
                     services.AddTransient<IPlayDiscordService, PlayDiscordService>();
-                    services.AddTransient<IPlayDbService, PlayDbService>();
                     services.AddSingleton<IPlayService, PlayService>();
 
                     var serviceProvider = services.BuildServiceProvider();

@@ -34,15 +34,15 @@ namespace TeamoSharp.Services
     public class PlayService : IPlayService
     {
         private readonly ILogger _logger;
-        private readonly IPlayDbService _dbService;
+        private readonly PlayContext _dbContext;
         private readonly IPlayDiscordService _discordService;
 
         private readonly IDictionary<int, TimersHolder> _timers;
 
-        public PlayService(ILogger<PlayService> logger, IPlayDbService dbService, IPlayDiscordService discordService)
+        public PlayService(ILogger<PlayService> logger, PlayContext dbContext, IPlayDiscordService discordService)
         {
             _logger = logger;
-            _dbService = dbService;
+            _dbContext= dbContext;
             _discordService = discordService;
             _timers = new Dictionary<int, TimersHolder>();
         }
@@ -57,7 +57,7 @@ namespace TeamoSharp.Services
             PlayPost post = null;
             try
             {
-                post = await _dbService.CreateAsync(date, numPlayers, game, message.Id, channel.Id);
+                post = await _dbContext.CreateAsync(date, numPlayers, game, message.Id, channel.Id);
                 _logger.LogInformation($"New entry created: {channel.Id} : {message.Id}");
                 await _discordService.UpdateMessageAsync(post, channel);
             }
@@ -72,7 +72,7 @@ namespace TeamoSharp.Services
             updateTimer.Elapsed += async (sender, e) =>
             {
                 _logger.LogInformation("Updating!");
-                var dbPost = _dbService.GetPost(post.PlayPostId);
+                var dbPost = _dbContext.GetPost(post.PlayPostId);
                 await _discordService.UpdateMessageAsync(dbPost, channel);
             };
             updateTimer.AutoReset = true;
@@ -82,7 +82,7 @@ namespace TeamoSharp.Services
             var startTimer = new Timer((date - DateTime.Now).TotalMilliseconds);
             startTimer.Elapsed += async (sender, e) =>
             {
-                var dbPost = _dbService.GetPost(post.PlayPostId);
+                var dbPost = _dbContext.GetPost(post.PlayPostId);
                 await _discordService.CreateStartMessageAsync(dbPost, channel);
                 await DeleteAsync(dbPost.PlayPostId, client);
             };
@@ -94,7 +94,7 @@ namespace TeamoSharp.Services
 
         public async Task DeleteAsync(int postId, DiscordClient client)
         {
-            var post = _dbService.GetPost(postId);
+            var post = _dbContext.GetPost(postId);
 
             var timersHolder = _timers[postId];
             timersHolder.UpdateTimer.Stop();
@@ -104,7 +104,7 @@ namespace TeamoSharp.Services
             var channel = await client.GetChannelAsync((ulong)post.DiscordChannelId);
             await _discordService.DeleteMessageAsync((ulong)post.DiscordMessageId, channel);
 
-            await _dbService.DeleteAsync(postId);
+            await _dbContext.DeleteAsync(postId);
         }
 
         public Task EditDateAsync(DateTime date, ulong messageId, DiscordChannel channel)
