@@ -24,12 +24,6 @@ namespace TeamoSharp
 
             var json = string.Empty;
 
-            //using (var fs = File.OpenRead("config.json"))
-            //using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
-            //    json = sr.ReadToEnd();
-
-            //var configJson = JsonConvert.DeserializeObject<ConfigJson>(json);
-
             var botToken = Environment.GetEnvironmentVariable("TEAMO_BOT_TOKEN");
             if (botToken is null)
             {
@@ -48,11 +42,6 @@ namespace TeamoSharp
             Client.Ready += OnClientReady;
             Client.DebugLogger.LogMessageReceived += _logger.LogDSharp;
 
-            //Client.UseInteractivity(new InteractivityConfiguration
-            //{
-            //    Timeout = TimeSpan.FromMinutes(2)
-            //});
-
             var commandsConfig = new CommandsNextConfiguration
             {
                 //StringPrefixes = new string[] { configJson.Prefix },
@@ -64,10 +53,6 @@ namespace TeamoSharp
 
             Commands = Client.UseCommandsNext(commandsConfig);
             Commands.RegisterCommands<Commands.TeamoCommands>();
-            //Commands.RegisterCommands<FunCommands>();
-            //Commands.RegisterCommands<ItemCommands>();
-            //Commands.RegisterCommands<ProfileCommands>();
-            //Commands.RegisterCommands<TeamCommands>();
 
             Client.MessageCreated += async e =>
             {
