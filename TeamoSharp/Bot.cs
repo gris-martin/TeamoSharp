@@ -60,6 +60,22 @@ namespace TeamoSharp
                     await e.Message.RespondAsync("pong!").ConfigureAwait(false);
             };
 
+            Client.MessageReactionAdded += async args =>
+            {
+                if (args.Emoji.IsNumberEmoji())
+                {
+                    Console.WriteLine($"Got number {args.Emoji.GetAsNumber()}");
+                }
+                else if (args.Emoji.IsCancelEmoji())
+                {
+                    Console.WriteLine("Get cancel emoji " + args.Emoji.Name + "!");
+                }
+            };
+
+            Client.MessageReactionRemoved += async args =>
+            {
+            };
+
             Client.ConnectAsync();
         }
 
