@@ -97,19 +97,28 @@ namespace TeamoSharp.DataAccessLayer
             _logger.LogDebug($"Database entry {postId} deleted. Status: {status}. Num posts: {numPosts}");
         }
 
-        public Task<Post> EditDateAsync(DateTime date, ulong messageId, ulong channelId)
+        public async Task<Post> EditDateAsync(DateTime date, int postId)
         {
-            throw new NotImplementedException();
+            var post = GetPost(postId);
+            post.EndDate = date;
+            await SaveChangesAsync();
+            return post;
         }
 
-        public Task<Post> EditGameAsync(string game, ulong messageId, ulong channelId)
+        public async Task<Post> EditGameAsync(string game, int postId)
         {
-            throw new NotImplementedException();
+            var post = GetPost(postId);
+            post.Game = game;
+            await SaveChangesAsync();
+            return post;
         }
 
-        public Task<Post> EditNumPlayersAsync(int numPlayers, ulong messageId, ulong channelId)
+        public async Task<Post> EditNumPlayersAsync(int numPlayers, int postId)
         {
-            throw new NotImplementedException();
+            var post = GetPost(postId);
+            post.MaxPlayers = numPlayers;
+            await SaveChangesAsync();
+            return post;
         }
 
         public Post GetPost(int postId)

@@ -1,4 +1,5 @@
 ﻿using DSharpPlus.Entities;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Threading.Tasks;
 
@@ -6,11 +7,12 @@ namespace TeamoSharp.ErrorHandling
 {
     public static class DiscordPoster
     {
+        private const int RemoveTimerMs = 15000;
+
         private static DiscordEmbed BuildEmbed(Exception e, string s = null)
         {
-
-
             var embedBuilder = new DiscordEmbedBuilder();
+
             if (s is null)
             {
                 embedBuilder.Description = "Something went wrong!";
@@ -18,12 +20,18 @@ namespace TeamoSharp.ErrorHandling
             {
                 embedBuilder.Description = s;
             }
-            embedBuilder.AddField(e.GetType().ToString(), e.Message);
+
+            if (!(e is null))
+            {
+                embedBuilder.AddField(e.GetType().ToString(), e.Message);
+                AddInnerException(embedBuilder, e, 1);
+            }
+
             embedBuilder.Footer = new DiscordEmbedBuilder.EmbedFooter
             {
-                Text = "See log for more information"
+                Text = $"See log for more information. This message will be deleted in {RemoveTimerMs / 1000.0} seconds"
             };
-            AddInnerException(embedBuilder, e, 1);
+
             return embedBuilder.Build();
         }
 
@@ -37,12 +45,21 @@ namespace TeamoSharp.ErrorHandling
             }
         }
 
-        public async static Task PostExceptionMessageAsync(Exception e, DiscordChannel channel, string s = null)
+        public async static Task PostExceptionMessageAsync(DiscordChannel channel, ILogger logger, Exception e = null, string s = null)
         {
+            logger.LogError(e, s);
+
             var embed = BuildEmbed(e, s);
             var message = await channel.SendMessageAsync(embed: embed);
-            await Task.Delay(15000);
-            await message.DeleteAsync();
+            await Task.Delay(RemoveTimerMs);
+            try
+            {
+                await message.DeleteAsync();
+            }
+            catch (DSharpPlus.Exceptions.NotFoundException)
+            {
+                logger.LogInformation("Could not delete message since it had already been deleted");
+            }
         }
     }
 }

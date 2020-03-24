@@ -13,9 +13,9 @@ namespace TeamoSharp.Services
     public interface IMainService
     {
         Task CreateAsync(DateTime date, int numPlayers, string game, ulong channelId, DiscordClient client);
-        Task EditDateAsync(DateTime date, ulong messageId, DiscordChannel channel);
-        Task EditNumPlayersAsync(int numPlayers, ulong messageId, DiscordChannel channel);
-        Task EditGameAsync(string game, ulong messageId, DiscordChannel channel);
+        Task EditDateAsync(DateTime date, int postId, DiscordChannel channel);
+        Task EditNumPlayersAsync(int numPlayers, int postId, DiscordChannel channel);
+        Task EditGameAsync(string game, int postId, DiscordChannel channel);
         Task DeleteAsync(int postId, DiscordClient client);
     }
 
@@ -71,7 +71,6 @@ namespace TeamoSharp.Services
             var updateTimer = new Timer(5000);
             updateTimer.Elapsed += async (sender, e) =>
             {
-                _logger.LogInformation("Updating!");
                 var dbPost = _dbContext.GetPost(post.PostId);
                 await _discordService.UpdateMessageAsync(dbPost, channel);
             };
@@ -108,22 +107,30 @@ namespace TeamoSharp.Services
             await _dbContext.DeleteAsync(postId);
         }
 
-        public Task EditDateAsync(DateTime date, ulong messageId, DiscordChannel channel)
+        public async Task EditDateAsync(DateTime date, int postId, DiscordChannel channel)
         {
-            _logger.LogError("Method not implemented!");
-            return Task.CompletedTask;
+            // TODO: Better exception
+            if (date <= DateTime.Now)
+                throw new Exception($"Cannot change to a date and time before now! Current date: {DateTime.Now}. Desired date: {date}");
+            _timers[postId].StartTimer.Interval = (date - DateTime.Now).TotalMilliseconds;
+            var post = await _dbContext.EditDateAsync(date, postId);
+            await _discordService.UpdateMessageAsync(post, channel);
         }
 
-        public Task EditGameAsync(string game, ulong messageId, DiscordChannel channel)
+        public async Task EditGameAsync(string game, int postId, DiscordChannel channel)
         {
-            _logger.LogError("Method not implemented!");
-            return Task.CompletedTask;
+            if (game.Length > 40)
+                throw new Exception($"Game name too long ({game.Length} characters)! Maximum number of characters is 40");
+            var post = await _dbContext.EditGameAsync(game, postId);
+            await _discordService.UpdateMessageAsync(post, channel);
         }
 
-        public Task EditNumPlayersAsync(int numPlayers, ulong messageId, DiscordChannel channel)
+        public async Task EditNumPlayersAsync(int numPlayers, int postId, DiscordChannel channel)
         {
-            _logger.LogError("Method not implemented!");
-            return Task.CompletedTask;
+            if (numPlayers < 2)
+                throw new Exception($"Invalid number of players. The number of players must be between 2 and {int.MaxValue}");
+            var post = await _dbContext.EditNumPlayersAsync(numPlayers, postId);
+            await _discordService.UpdateMessageAsync(post, channel);
         }
     }
 }

@@ -68,18 +68,20 @@ namespace TeamoSharp.Services
         {
             var builder = new DiscordEmbedBuilder
             {
-                Description = "Hello from Teamo"
+                Title = $"Dags för **{game}**!!",
+                Description = $"**Start: {date}** - För anmälan, tryck emotes nedan med antal som vill spela."
             };
-            builder.AddField("Game", $"{game}");
-            builder.AddField("NumPlayers", $"{numPlayers}");
-            builder.AddField("End date", $"{date}");
+            builder.Color = DiscordColor.Purple;
+            builder.AddField("Tid kvar", $"{date - DateTime.Now}");
+            builder.AddField("Spelare per lag", $"{numPlayers}");
+            builder.AddField("Anmälda", $"Inga anmälda än");
             if (!(postId is null))
             {
-                builder.AddField("Post id", $"{postId}");
+                builder.AddField("Id", $"{postId}");
             }
             builder.Footer = new DiscordEmbedBuilder.EmbedFooter
             {
-                Text = $"Last updated {DateTime.Now}"
+                Text = $"Uppdateras var 15:e sekund. Senast uppdaterad {DateTime.Now}"
             };
             return builder.Build();
         }

@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Threading.Tasks;
 using TeamoSharp.Services;
+using static TeamoSharp.ErrorHandling.DiscordPoster;
 
 namespace TeamoSharp.Commands
 {
@@ -33,9 +34,57 @@ namespace TeamoSharp.Commands
             }
             catch (Exception e)
             {
-                _logger.LogError(e, "Could not create a new teamo");
-                await ErrorHandling.DiscordPoster.PostExceptionMessageAsync(e, channel, "Could not create a new teamo :(");
+                await PostExceptionMessageAsync(channel, _logger, e, "Could not create a new teamo :(");
                 return;
+            }
+        }
+
+
+        [Command("change")]
+        [Aliases("edit")]
+        [Description("Edit an aspect of a teamo")]
+        public async Task Change(CommandContext ctx, int postId, string property, [RemainingText] string args)
+        {
+            // TODO: Custom command handler
+            try
+            {
+                var propLower = property.ToLower();
+                if (propLower == "date" || propLower == "time")
+                {
+                    // TODO: Better parsing
+                    if (DateTime.TryParse(args, out DateTime date))
+                    {
+                        await _playService.EditDateAsync(date, postId, ctx.Channel);
+                    }
+                    else
+                    {
+                        await PostExceptionMessageAsync(ctx.Channel, _logger, s: $"Could not parse {args} as date and/or time");
+                        return;
+                    }
+                }
+                else if (propLower == "players" || propLower == "maxplayers" || propLower == "numplayers")
+                {
+                    if (int.TryParse(args, out int maxPlayers))
+                    {
+                        await _playService.EditNumPlayersAsync(maxPlayers, postId, ctx.Channel);
+                    }
+                    else
+                    {
+                        await PostExceptionMessageAsync(ctx.Channel, _logger, s: $"Could not parse {args} as integer");
+                        return;
+                    }
+                }
+                else if (propLower == "game")
+                {
+                    await _playService.EditGameAsync(args, postId, ctx.Channel);
+                }
+                else
+                {
+                    await PostExceptionMessageAsync(ctx.Channel, _logger, s: $"Unknown teamo property: {property}. Select either \"date\", \"players\" or \"game\"");
+                }
+            } catch (System.Exception e)
+            {
+                await PostExceptionMessageAsync(ctx.Channel, _logger, e, "Could not edit teamo!");
             }
         }
 
@@ -57,8 +106,7 @@ namespace TeamoSharp.Commands
             }
             catch (Exception e)
             {
-                _logger.LogError(e, "Could not delete teamo");
-                await ErrorHandling.DiscordPoster.PostExceptionMessageAsync(e, ctx.Channel, "Could not delete teamo");
+                await PostExceptionMessageAsync(ctx.Channel, _logger, e, "Could not delete teamo");
                 return;
             }
         }
