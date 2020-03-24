@@ -1,15 +1,11 @@
 ﻿using DSharpPlus.EventArgs;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace TeamoSharp.Extensions
 {
     public static class Logging
     {
-        public static void LogDSharp(this ILogger logger, object sender, DebugLogMessageEventArgs e)
+        public static void LogDSharp(this ILogger logger, object _, DebugLogMessageEventArgs e)
         {
             switch (e.Level)
             {

@@ -10,10 +10,10 @@ namespace TeamoSharp.Commands
     public class TeamoCommands : BaseCommandModule
     {
         private readonly ILogger _logger;
-        private readonly IPlayService _playService;
+        private readonly IMainService _playService;
 
         public TeamoCommands(
-            ILogger<TeamoCommands> logger, IPlayService playService)
+            ILogger<TeamoCommands> logger, IMainService playService)
         {
             _logger = logger;
             _playService = playService;

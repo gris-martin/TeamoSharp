@@ -4,6 +4,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
 using System.Globalization;
+using TeamoSharp.DataAccessLayer;
 using TeamoSharp.Services;
 
 namespace TeamoSharp
@@ -24,12 +25,12 @@ namespace TeamoSharp
             return Host.CreateDefaultBuilder(args)
                 .ConfigureServices((hostContext, services) =>
                 {
-                    services.AddDbContext<Models.PlayContext>();
+                    services.AddDbContext<TeamoContext>();
 
                     services.AddLogging(ConfigureLogging);
 
-                    services.AddTransient<IPlayDiscordService, PlayDiscordService>();
-                    services.AddSingleton<IPlayService, PlayService>();
+                    services.AddTransient<IDiscordService, DiscordService>();
+                    services.AddSingleton<IMainService, MainService>();
 
                     var serviceProvider = services.BuildServiceProvider();
                     var bot = new Bot(serviceProvider);
