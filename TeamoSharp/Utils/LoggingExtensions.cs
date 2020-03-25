@@ -3,7 +3,7 @@ using Microsoft.Extensions.Logging;
 
 namespace TeamoSharp.Extensions
 {
-    public static class Logging
+    public static class LoggingExtensions
     {
         public static void LogDSharp(this ILogger logger, object _, DebugLogMessageEventArgs e)
         {
