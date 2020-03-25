@@ -10,17 +10,16 @@ using TeamoSharp.Extensions;
 
 namespace TeamoSharp
 {
-    public class Bot
+    public class DiscordBot
     {
         public DiscordClient Client { get; private set; }
         //public InteractivityExtension Interactivity { get; private set; }
         public CommandsNextExtension Commands { get; private set; }
-        private readonly ILogger<Bot> _logger;
+        private readonly ILogger<DiscordBot> _logger;
 
-        public Bot(IServiceProvider services)
+        public DiscordBot(ILogger<DiscordBot> logger)
         {
-            using var scope = services.CreateScope();
-            _logger = scope.ServiceProvider.GetService<ILogger<Bot>>();
+            _logger = logger;
 
             var json = string.Empty;
 
@@ -41,18 +40,6 @@ namespace TeamoSharp
 
             Client.Ready += OnClientReady;
             Client.DebugLogger.LogMessageReceived += _logger.LogDSharp;
-
-            var commandsConfig = new CommandsNextConfiguration
-            {
-                //StringPrefixes = new string[] { configJson.Prefix },
-                EnableDms = true,
-                EnableMentionPrefix = true,
-                DmHelp = true,
-                Services = services
-            };
-
-            Commands = Client.UseCommandsNext(commandsConfig);
-            Commands.RegisterCommands<Commands.TeamoCommands>();
 
             Client.MessageCreated += async e =>
             {
@@ -77,6 +64,21 @@ namespace TeamoSharp
             };
 
             Client.ConnectAsync();
+        }
+
+        public void CreateCommands(IServiceProvider services)
+        {
+            var commandsConfig = new CommandsNextConfiguration
+            {
+                //StringPrefixes = new string[] { configJson.Prefix },
+                EnableDms = true,
+                EnableMentionPrefix = true,
+                DmHelp = true,
+                Services = services
+            };
+
+            Commands = Client.UseCommandsNext(commandsConfig);
+            Commands.RegisterCommands<Commands.TeamoCommands>();
         }
 
         private Task OnClientReady(ReadyEventArgs e)

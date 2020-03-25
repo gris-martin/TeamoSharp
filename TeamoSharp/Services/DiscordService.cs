@@ -1,4 +1,5 @@
-﻿using DSharpPlus.Entities;
+﻿using DSharpPlus;
+using DSharpPlus.Entities;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Threading.Tasks;
@@ -6,52 +7,67 @@ using TeamoSharp.DataAccessLayer.Models;
 
 namespace TeamoSharp.Services
 {
-    public interface IDiscordService
+    public interface IClientService
     {
-        Task<DiscordMessage> CreateMessageAsync(DateTime date, int numPlayers, string game, DiscordChannel channel);
-        Task UpdateMessageAsync(Post post, DiscordChannel channel);
-        Task DeleteMessageAsync(string messageId, DiscordChannel channel);
-        Task CreateStartMessageAsync(Post post, DiscordChannel channel);
+        Task<DiscordMessage> CreateMessageAsync(DateTime date,
+                                                int numPlayers,
+                                                string game,
+                                                string channelId,
+                                                string serverId = null);
+        Task UpdateMessageAsync(Post post);
+        Task DeleteMessageAsync(Post post);
+        Task CreateStartMessageAsync(Post post);
     }
 
-    public class DiscordService : IDiscordService
+    public class DiscordService : IClientService
     {
         private readonly ILogger _logger;
+        private readonly DiscordClient _client;
 
-        public DiscordService(ILogger<DiscordService> logger)
+        public DiscordService(ILogger<DiscordService> logger, DiscordBot bot)
         {
             _logger = logger;
+            _client = bot.Client;
         }
 
-        public async Task<DiscordMessage> CreateMessageAsync(DateTime date, int numPlayers, string game, DiscordChannel channel)
+        public async Task<DiscordMessage> CreateMessageAsync(DateTime date,
+                                                             int numPlayers,
+                                                             string game,
+                                                             string channelId,
+                                                             string serverId = null)
         {
             _logger.LogInformation("Creating new Discord message");
             var embed = CreateEmbed(date, numPlayers, game);
+            var channel = await _client.GetChannelAsync(ulong.Parse(channelId));
             var message = await channel.SendMessageAsync(embed: embed);
             return message;
         }
 
 
 
-        public async Task DeleteMessageAsync(string messageId, DiscordChannel channel)
+        public async Task DeleteMessageAsync(Post post)
         {
-            ulong id = ulong.Parse(messageId);
-            var message = await channel.GetMessageAsync(id);
+            ulong messageId = ulong.Parse(post.Message.MessageId);
+            ulong channelId = ulong.Parse(post.Message.ChannelId);
+            var channel = await _client.GetChannelAsync(channelId);
+            var message = await channel.GetMessageAsync(messageId);
             await channel.DeleteMessageAsync(message);
         }
 
 
 
-        public async Task UpdateMessageAsync(Post post, DiscordChannel channel)
+        public async Task UpdateMessageAsync(Post post)
         {
-            ulong id = ulong.Parse(post.Message.MessageId);
-            var message = await channel.GetMessageAsync(id);
+            ulong messageId = ulong.Parse(post.Message.MessageId);
+            ulong channelId = ulong.Parse(post.Message.ChannelId);
+            var channel = await _client.GetChannelAsync(channelId);
+            var message = await channel.GetMessageAsync(messageId);
             await message.ModifyAsync(embed: CreateEmbed(post));
         }
 
 
 
-        public Task CreateStartMessageAsync(Post post, DiscordChannel channel)
+        public Task CreateStartMessageAsync(Post post)
         {
             _logger.LogError("Method to create start message not implemented!");
             return Task.CompletedTask;

@@ -35,11 +35,11 @@ namespace TeamoSharp.Services
     {
         private readonly ILogger _logger;
         private readonly TeamoContext _dbContext;
-        private readonly IDiscordService _discordService;
+        private readonly IClientService _discordService;
 
         private readonly IDictionary<int, TimersHolder> _timers;
 
-        public MainService(ILogger<MainService> logger, TeamoContext dbContext, IDiscordService discordService)
+        public MainService(ILogger<MainService> logger, TeamoContext dbContext, IClientService discordService)
         {
             _logger = logger;
             _dbContext= dbContext;
@@ -51,7 +51,7 @@ namespace TeamoSharp.Services
         {
             // Create Discord message
             var channel = await client.GetChannelAsync(channelId);
-            var message = await _discordService.CreateMessageAsync(date, numPlayers, game, channel);
+            var message = await _discordService.CreateMessageAsync(date, numPlayers, game, channelId.ToString());
 
             // Create database entry
             Post post = null;
@@ -59,7 +59,7 @@ namespace TeamoSharp.Services
             {
                 post = await _dbContext.CreateAsync(date, numPlayers, game, message.Id.ToString(), channel.Id.ToString());
                 _logger.LogInformation($"New entry created: {channel.Id} : {message.Id}");
-                await _discordService.UpdateMessageAsync(post, channel);
+                await _discordService.UpdateMessageAsync(post);
             }
             catch (Exception e)
             {
@@ -72,7 +72,7 @@ namespace TeamoSharp.Services
             updateTimer.Elapsed += async (sender, e) =>
             {
                 var dbPost = _dbContext.GetPost(post.PostId);
-                await _discordService.UpdateMessageAsync(dbPost, channel);
+                await _discordService.UpdateMessageAsync(dbPost);
             };
             updateTimer.AutoReset = true;
             updateTimer.Start();
@@ -82,7 +82,7 @@ namespace TeamoSharp.Services
             startTimer.Elapsed += async (sender, e) =>
             {
                 var dbPost = _dbContext.GetPost(post.PostId);
-                await _discordService.CreateStartMessageAsync(dbPost, channel);
+                await _discordService.CreateStartMessageAsync(dbPost);
                 await DeleteAsync(dbPost.PostId, client);
             };
             startTimer.AutoReset = false;
@@ -102,7 +102,7 @@ namespace TeamoSharp.Services
 
             ulong channelId = ulong.Parse(post.Message.ChannelId);
             var channel = await client.GetChannelAsync(channelId);
-            await _discordService.DeleteMessageAsync(post.Message.MessageId, channel);
+            await _discordService.DeleteMessageAsync(post);
 
             await _dbContext.DeleteAsync(postId);
         }
@@ -114,7 +114,7 @@ namespace TeamoSharp.Services
                 throw new Exception($"Cannot change to a date and time before now! Current date: {DateTime.Now}. Desired date: {date}");
             _timers[postId].StartTimer.Interval = (date - DateTime.Now).TotalMilliseconds;
             var post = await _dbContext.EditDateAsync(date, postId);
-            await _discordService.UpdateMessageAsync(post, channel);
+            await _discordService.UpdateMessageAsync(post);
         }
 
         public async Task EditGameAsync(string game, int postId, DiscordChannel channel)
@@ -122,7 +122,7 @@ namespace TeamoSharp.Services
             if (game.Length > 40)
                 throw new Exception($"Game name too long ({game.Length} characters)! Maximum number of characters is 40");
             var post = await _dbContext.EditGameAsync(game, postId);
-            await _discordService.UpdateMessageAsync(post, channel);
+            await _discordService.UpdateMessageAsync(post);
         }
 
         public async Task EditNumPlayersAsync(int numPlayers, int postId, DiscordChannel channel)
@@ -130,7 +130,7 @@ namespace TeamoSharp.Services
             if (numPlayers < 2)
                 throw new Exception($"Invalid number of players. The number of players must be between 2 and {int.MaxValue}");
             var post = await _dbContext.EditNumPlayersAsync(numPlayers, postId);
-            await _discordService.UpdateMessageAsync(post, channel);
+            await _discordService.UpdateMessageAsync(post);
         }
     }
 }
