@@ -1,12 +1,12 @@
 ﻿using DSharpPlus;
 using DSharpPlus.CommandsNext;
 using DSharpPlus.EventArgs;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Globalization;
 using System.Threading.Tasks;
-using TeamoSharp.Extensions;
+using TeamoSharp.Services;
+using TeamoSharp.Utils;
 
 namespace TeamoSharp
 {
@@ -20,6 +20,7 @@ namespace TeamoSharp
         public DiscordBot(ILogger<DiscordBot> logger)
         {
             _logger = logger;
+            _logger.LogWarning("Creating DiscordBot");
 
             var json = string.Empty;
 
@@ -43,31 +44,16 @@ namespace TeamoSharp
 
             Client.MessageCreated += async e =>
             {
+                _logger.LogInformation("A new message was created!");
                 if (e.Message.Content.ToLower(CultureInfo.CurrentCulture).StartsWith("ping", StringComparison.Ordinal))
                     await e.Message.RespondAsync("pong!").ConfigureAwait(false);
             };
-
-            Client.MessageReactionAdded += async args =>
-            {
-                if (args.Emoji.IsNumberEmoji())
-                {
-                    Console.WriteLine($"Got number {args.Emoji.GetAsNumber()}");
-                }
-                else if (args.Emoji.IsCancelEmoji())
-                {
-                    Console.WriteLine("Get cancel emoji " + args.Emoji.Name + "!");
-                }
-            };
-
-            Client.MessageReactionRemoved += async args =>
-            {
-            };
-
-            Client.ConnectAsync();
+            _logger.LogWarning("DiscordBot created");
         }
 
         public void CreateCommands(IServiceProvider services)
         {
+            _logger.LogWarning("Creating commands");
             var commandsConfig = new CommandsNextConfiguration
             {
                 //StringPrefixes = new string[] { configJson.Prefix },
@@ -79,6 +65,35 @@ namespace TeamoSharp
 
             Commands = Client.UseCommandsNext(commandsConfig);
             Commands.RegisterCommands<Commands.TeamoCommands>();
+            _logger.LogWarning("Commands created");
+        }
+
+        public void CreateCallbacks(IMainService mainService)
+        {
+            Client.MessageReactionAdded += async args =>
+            {
+                if (args.User.IsCurrent)
+                    return;
+
+                var emoji = args.Emoji;
+                if (emoji.IsNumberEmoji())
+                {
+                    var numPlayers = emoji.GetAsNumber();
+                    await mainService.AddMemberAsync(args.User.Id.ToString(),
+                                                     args.Channel.Id.ToString(),
+                                                     args.Guild.Id.ToString(),
+                                                     args.Message.Id.ToString(),
+                                                     numPlayers);
+                }
+                else if (args.Emoji.IsCancelEmoji())
+                {
+                    Console.WriteLine("Get cancel emoji " + args.Emoji.Name + "!");
+                }
+            };
+
+            Client.MessageReactionRemoved += async args =>
+            {
+            };
         }
 
         private Task OnClientReady(ReadyEventArgs e)

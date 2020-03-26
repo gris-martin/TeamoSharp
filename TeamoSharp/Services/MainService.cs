@@ -1,6 +1,4 @@
-﻿using DSharpPlus;
-using DSharpPlus.Entities;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -12,11 +10,13 @@ namespace TeamoSharp.Services
 {
     public interface IMainService
     {
-        Task CreateAsync(DateTime date, int numPlayers, string game, ulong channelId, DiscordClient client);
-        Task EditDateAsync(DateTime date, int postId, DiscordChannel channel);
-        Task EditNumPlayersAsync(int numPlayers, int postId, DiscordChannel channel);
-        Task EditGameAsync(string game, int postId, DiscordChannel channel);
-        Task DeleteAsync(int postId, DiscordClient client);
+        Task CreateAsync(DateTime date, int numPlayers, string game, string channelId, string serverId);
+        Task EditDateAsync(DateTime date, int postId);
+        Task EditNumPlayersAsync(int numPlayers, int postId);
+        Task EditGameAsync(string game, int postId);
+        Task DeleteAsync(int postId);
+        Task AddMemberAsync(string userId, string channelId, string serverId, string messageId, int numPlayers);
+        Task RemoveMemberAsync(string userId, string channelId, string serverId, string messageId);
     }
 
     public class TimersHolder
@@ -47,18 +47,23 @@ namespace TeamoSharp.Services
             _timers = new Dictionary<int, TimersHolder>();
         }
 
-        public async Task CreateAsync(DateTime date, int numPlayers, string game, ulong channelId, DiscordClient client)
+        public async Task AddMemberAsync(string userId, string channelId, string serverId, string messageId, int numPlayers)
+        {
+            var post = await _dbContext.AddMemberAsync(userId, numPlayers, messageId, channelId, serverId);
+            await _discordService.UpdateMessageAsync(post);
+        }
+
+        public async Task CreateAsync(DateTime date, int numPlayers, string game, string channelId, string serverId)
         {
             // Create Discord message
-            var channel = await client.GetChannelAsync(channelId);
-            var message = await _discordService.CreateMessageAsync(date, numPlayers, game, channelId.ToString());
+            var message = await _discordService.CreateMessageAsync(date, numPlayers, game, channelId, serverId);
 
             // Create database entry
             Post post = null;
             try
             {
-                post = await _dbContext.CreateAsync(date, numPlayers, game, message.Id.ToString(), channel.Id.ToString());
-                _logger.LogInformation($"New entry created: {channel.Id} : {message.Id}");
+                post = await _dbContext.CreateAsync(date, numPlayers, game, message.Id.ToString(), channelId, serverId);
+                _logger.LogInformation($"New entry created: {channelId} : {message.Id}");
                 await _discordService.UpdateMessageAsync(post);
             }
             catch (Exception e)
@@ -83,7 +88,7 @@ namespace TeamoSharp.Services
             {
                 var dbPost = _dbContext.GetPost(post.PostId);
                 await _discordService.CreateStartMessageAsync(dbPost);
-                await DeleteAsync(dbPost.PostId, client);
+                await DeleteAsync(dbPost.PostId);
             };
             startTimer.AutoReset = false;
             startTimer.Start();
@@ -91,7 +96,7 @@ namespace TeamoSharp.Services
             _timers.Add(post.PostId, timersHolder);
         }
 
-        public async Task DeleteAsync(int postId, DiscordClient client)
+        public async Task DeleteAsync(int postId)
         {
             var post = _dbContext.GetPost(postId);
 
@@ -100,14 +105,12 @@ namespace TeamoSharp.Services
             timersHolder.StartTimer.Stop();
             _timers.Remove(postId);
 
-            ulong channelId = ulong.Parse(post.Message.ChannelId);
-            var channel = await client.GetChannelAsync(channelId);
             await _discordService.DeleteMessageAsync(post);
 
             await _dbContext.DeleteAsync(postId);
         }
 
-        public async Task EditDateAsync(DateTime date, int postId, DiscordChannel channel)
+        public async Task EditDateAsync(DateTime date, int postId)
         {
             // TODO: Better exception
             if (date <= DateTime.Now)
@@ -117,7 +120,7 @@ namespace TeamoSharp.Services
             await _discordService.UpdateMessageAsync(post);
         }
 
-        public async Task EditGameAsync(string game, int postId, DiscordChannel channel)
+        public async Task EditGameAsync(string game, int postId)
         {
             if (game.Length > 40)
                 throw new Exception($"Game name too long ({game.Length} characters)! Maximum number of characters is 40");
@@ -125,12 +128,17 @@ namespace TeamoSharp.Services
             await _discordService.UpdateMessageAsync(post);
         }
 
-        public async Task EditNumPlayersAsync(int numPlayers, int postId, DiscordChannel channel)
+        public async Task EditNumPlayersAsync(int numPlayers, int postId)
         {
             if (numPlayers < 2)
                 throw new Exception($"Invalid number of players. The number of players must be between 2 and {int.MaxValue}");
             var post = await _dbContext.EditNumPlayersAsync(numPlayers, postId);
             await _discordService.UpdateMessageAsync(post);
+        }
+
+        public Task RemoveMemberAsync(string userId, string channelId, string serverId, string messageId)
+        {
+            throw new NotImplementedException();
         }
     }
 }

@@ -30,7 +30,7 @@ namespace TeamoSharp.Commands
             var channel = ctx.Channel;
             try
             {
-                await _playService.CreateAsync(endDate, maxPlayers, game, channel.Id, ctx.Client);
+                await _playService.CreateAsync(endDate, maxPlayers, game, channel.Id.ToString(), ctx.Guild.Id.ToString());
             }
             catch (Exception e)
             {
@@ -54,7 +54,7 @@ namespace TeamoSharp.Commands
                     // TODO: Better parsing
                     if (DateTime.TryParse(args, out DateTime date))
                     {
-                        await _playService.EditDateAsync(date, postId, ctx.Channel);
+                        await _playService.EditDateAsync(date, postId);
                     }
                     else
                     {
@@ -66,7 +66,7 @@ namespace TeamoSharp.Commands
                 {
                     if (int.TryParse(args, out int maxPlayers))
                     {
-                        await _playService.EditNumPlayersAsync(maxPlayers, postId, ctx.Channel);
+                        await _playService.EditNumPlayersAsync(maxPlayers, postId);
                     }
                     else
                     {
@@ -76,7 +76,7 @@ namespace TeamoSharp.Commands
                 }
                 else if (propLower == "game")
                 {
-                    await _playService.EditGameAsync(args, postId, ctx.Channel);
+                    await _playService.EditGameAsync(args, postId);
                 }
                 else
                 {
@@ -102,7 +102,7 @@ namespace TeamoSharp.Commands
 
             try
             {
-                await _playService.DeleteAsync(postId, ctx.Client);
+                await _playService.DeleteAsync(postId);
             }
             catch (Exception e)
             {

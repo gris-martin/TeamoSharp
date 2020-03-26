@@ -25,7 +25,11 @@ namespace TeamoSharp.DataAccessLayer
 
         public async Task<Post> AddMemberAsync(string userId, int numPlayers, string messageId, string channelId = null, string serverId = null)
         {
-
+            _logger.LogInformation("Adding member!\n" +
+                $"message id: {messageId}\n" +
+                $"channel id: {channelId}\n" +
+                $"server id: {serverId}\n"
+            );
 
             var post = Posts.Single(
                 (a) => 
@@ -70,7 +74,7 @@ namespace TeamoSharp.DataAccessLayer
 
         public async Task<Post> CreateAsync(DateTime date, int numPlayers, string game, string messageId, string channelId = null, string serverId = null)
         {
-            _logger.LogDebug($"Creating new database entry. {date}; {numPlayers}; {game}; {messageId}; {channelId}");
+            _logger.LogDebug($"Creating new database entry. {date}; {numPlayers}; {game}; {messageId}; {channelId}; {serverId}");
             var message = new ClientMessage
             {
                 MessageId = messageId,

@@ -29,13 +29,16 @@ namespace TeamoSharp
 
                     services.AddLogging(ConfigureLogging);
 
-                    services.AddSingleton<DiscordBot>();
                     services.AddTransient<IClientService, DiscordService>();
                     services.AddSingleton<IMainService, MainService>();
+
+                    services.AddSingleton<DiscordBot>();
 
                     var serviceProvider = services.BuildServiceProvider();
                     var bot = serviceProvider.GetRequiredService<DiscordBot>();
                     bot.CreateCommands(serviceProvider);
+                    bot.CreateCallbacks(serviceProvider.GetRequiredService<IMainService>());
+                    bot.Client.ConnectAsync();
                 });
         }
 

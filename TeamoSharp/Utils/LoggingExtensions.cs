@@ -1,7 +1,7 @@
 ﻿using DSharpPlus.EventArgs;
 using Microsoft.Extensions.Logging;
 
-namespace TeamoSharp.Extensions
+namespace TeamoSharp.Utils
 {
     public static class LoggingExtensions
     {

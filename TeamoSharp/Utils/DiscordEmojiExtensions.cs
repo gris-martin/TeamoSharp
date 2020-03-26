@@ -1,29 +1,17 @@
 ﻿using DSharpPlus.Entities;
 using System;
-using System.Linq;
+using static TeamoSharp.Utils.DiscordEmojiUtils;
 
-namespace TeamoSharp.Extensions
+namespace TeamoSharp.Utils
 {
     public static class DiscordEmojiExtensions
     {
-        private static readonly string[] NumberEmojiNames =
+        public static int GetAsNumber(this DiscordEmoji emoji)
         {
-            ":one:",
-            ":two:",
-            ":three:",
-            ":four:",
-            ":five:",
-            ":six:",
-            ":seven:",
-            ":eight:",
-            ":nine:",
-            ":keycap_ten:"
-        };
-
-        public static int? GetAsNumber(this DiscordEmoji emoji)
-        {
-            var emojiIndex = Array.IndexOf(NumberEmojiNames, emoji.GetDiscordName());
-            return (emojiIndex < 0 || emojiIndex > 9) ? (int?)null : emojiIndex;
+            var emojiName = emoji.GetDiscordName();
+            var emojiUnicode = EmojiNameToUnicode[emojiName];
+            var emojiIndex = Array.IndexOf(NumberEmojiUnicodes, emojiUnicode);
+            return emojiIndex + 1;
         }
 
         public static bool IsCancelEmoji(this DiscordEmoji emoji)
@@ -33,7 +21,7 @@ namespace TeamoSharp.Extensions
 
         public static bool IsNumberEmoji(this DiscordEmoji emoji)
         {
-            return NumberEmojiNames.Contains(emoji.GetDiscordName());
+            return EmojiNameToUnicode.ContainsKey(emoji.GetDiscordName());
         }
     }
 }
