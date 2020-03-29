@@ -5,45 +5,30 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using TeamoSharp.DataAccessLayer.Models;
+using TeamoSharp.Discord.Utils.Utils;
+//using TeamoSharp.DataAccessLayer.Models;
 using TeamoSharp.Utils;
 using static TeamoSharp.Utils.DiscordEmojiUtils;
 
 namespace TeamoSharp.Services
 {
-    public interface IClientService
-    {
-        Task<DiscordMessage> CreateMessageAsync(DateTime date,
-                                                int numPlayers,
-                                                string game,
-                                                string channelId,
-                                                string serverId = null);
-        Task UpdateMessageAsync(Post post);
-        Task DeleteMessageAsync(Post post);
-        Task CreateStartMessageAsync(Post post);
-    }
-
-    public class DiscordService : IClientService
+    public class DiscordClientService : IClientService
     {
         private readonly ILogger _logger;
         private readonly DiscordClient _client;
 
-        public DiscordService(ILogger<DiscordService> logger, DiscordBot bot)
+        public DiscordClientService(ILogger<DiscordClientService> logger, DiscordClient client)
         {
             _logger = logger;
-            _client = bot.Client;
+            _client = client;
         }
 
-        public async Task<DiscordMessage> CreateMessageAsync(DateTime date,
-                                                             int numPlayers,
-                                                             string game,
-                                                             string channelId,
-                                                             string serverId = null)
+        public async Task<Entities.ClientMessage> CreateMessageAsync(Entities.TeamoEntry entry)
         {
             _logger.LogInformation("Creating new Discord message");
-            var embed = await CreateEmbedAsync(date, numPlayers, game);
-            var channel = await _client.GetChannelAsync(ulong.Parse(channelId));
-            var message = await channel.SendMessageAsync(embed: embed);
+            var embed = await CreateEmbedAsync(entry);
+            var channel = await _client.GetChannelAsync(ulong.Parse(entry.Message.ChannelId));
+            var dMessage = await channel.SendMessageAsync(embed: embed);
 
             //var numReactions = numPlayers < 11 ? numPlayers : 10;
             //for (int i = 1; i < numReactions; i++)
@@ -52,32 +37,43 @@ namespace TeamoSharp.Services
             //}
             //await message.CreateReactionAsync(GetCancelEmoji());
 
-            return message;
+            return dMessage.AsEntityType();
         }
 
 
 
-        public async Task DeleteMessageAsync(Post post)
+        public async Task DeleteMessageAsync(Entities.ClientMessage message)
         {
-            ulong messageId = ulong.Parse(post.Message.MessageId);
-            ulong channelId = ulong.Parse(post.Message.ChannelId);
+            ulong messageId = ulong.Parse(message.MessageId);
+            ulong channelId = ulong.Parse(message.ChannelId);
             var channel = await _client.GetChannelAsync(channelId);
-            var message = await channel.GetMessageAsync(messageId);
-            await channel.DeleteMessageAsync(message);
+            try
+            {
+                var discordMessage = await channel.GetMessageAsync(messageId);
+                await discordMessage.DeleteAsync();
+            }
+            catch (DSharpPlus.Exceptions.NotFoundException nfe)
+            {
+                _logger.LogWarning(nfe, "Tried deleting a message that had already been deleted.");
+            }
         }
 
 
 
-        public async Task UpdateMessageAsync(Post post)
+        public async Task UpdateMessageAsync(Entities.TeamoEntry entry)
         {
-            ulong messageId = ulong.Parse(post.Message.MessageId);
-            ulong channelId = ulong.Parse(post.Message.ChannelId);
+            ulong messageId = ulong.Parse(entry.Message.MessageId);
+            ulong channelId = ulong.Parse(entry.Message.ChannelId);
             var channel = await _client.GetChannelAsync(channelId);
             var message = await channel.GetMessageAsync(messageId);
-            var embed = await CreateEmbedAsync(post);
+            var embed = await CreateEmbedAsync(entry);
             await message.ModifyAsync(embed: embed);
 
-            var maxPlayers = post.MaxPlayers;
+            var maxPlayers = entry.MaxPlayers;
+            //_logger.LogInformation($"Number of reactions: {message.Reactions.Count}");
+            //var reactions = message.Reactions;
+            //var reaction = reactions.First();
+
             for (int i = 0; i < NumberEmojiNames.Length; i++)
             {
                 var emoji = CreateEmojiFromNumber(i + 1);
@@ -102,7 +98,7 @@ namespace TeamoSharp.Services
                     await message.DeleteReactionsEmojiAsync(emoji);
                 }
 
-                foreach (var member in post.Members)
+                foreach (var member in entry.Members)
                 {
                     ulong memberId = ulong.Parse(member.ClientUserId);
                     if (emojiUsers.Any((u) => u.Id == memberId))
@@ -111,7 +107,8 @@ namespace TeamoSharp.Services
                         {
                             await message.DeleteReactionAsync(emoji, emojiUsers.Single((u) => u.Id == memberId));
                         }
-                    } else if (emojiNumber == member.NumPlayers)
+                    }
+                    else if (emojiNumber == member.NumPlayers)
                     {
                         _logger.LogWarning($"Mismatch between number of players in database and discord reactions for member {memberId}." +
                             $"Number of players according to database: {member.NumPlayers}");
@@ -124,7 +121,7 @@ namespace TeamoSharp.Services
 
 
 
-        public Task CreateStartMessageAsync(Post post)
+        public Task CreateStartMessageAsync(Entities.TeamoEntry entry)
         {
             _logger.LogError("Method to create start message not implemented!");
             return Task.CompletedTask;
@@ -132,13 +129,14 @@ namespace TeamoSharp.Services
 
 
         // ------------ Internal utility methods ------------
-        private async Task<DiscordEmbed> CreateEmbedAsync(Post post)
+        private async Task<DiscordEmbed> CreateEmbedAsync(Entities.TeamoEntry entry)
         {
-            return await CreateEmbedAsync(post.EndDate, post.MaxPlayers, post.Game, post.Members, post.PostId);
-        }
+            var game = entry.Game;
+            var date = entry.EndDate;
+            var maxPlayers = entry.MaxPlayers;
+            var members = entry.Members;
+            var id = entry.Id;
 
-        private async Task<DiscordEmbed> CreateEmbedAsync(DateTime date, int numPlayers, string game, IEnumerable<Member> members = null, int? postId = null)
-        {
             var builder = new DiscordEmbedBuilder
             {
                 Title = $"Dags för **{game}**!!",
@@ -146,7 +144,7 @@ namespace TeamoSharp.Services
             };
             builder.Color = DiscordColor.Purple;
             builder.AddField("Tid kvar", $"{date - DateTime.Now}");
-            builder.AddField("Spelare per lag", $"{numPlayers}");
+            builder.AddField("Spelare per lag", $"{maxPlayers}");
             builder.AddField("Anmälda", $"Inga anmälda än");
 
             if (members != null)
@@ -157,9 +155,9 @@ namespace TeamoSharp.Services
                     builder.AddField($"Member: {discordUser.Username}", $"{member.NumPlayers}");
                 }
             }
-            if (!(postId is null))
+            if (!(id is null))
             {
-                builder.AddField("Id", $"{postId}");
+                builder.AddField("Id", $"{id}");
             }
             builder.Footer = new DiscordEmbedBuilder.EmbedFooter
             {

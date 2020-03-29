@@ -1,12 +1,16 @@
 ﻿using DSharpPlus;
 using DSharpPlus.CommandsNext;
 using DSharpPlus.EventArgs;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Globalization;
 using System.Threading.Tasks;
+using TeamoSharp.Discord.Utils.Utils;
 using TeamoSharp.Services;
 using TeamoSharp.Utils;
+using static TeamoSharp.Utils.LoggerCreationUtils;
+
 
 namespace TeamoSharp
 {
@@ -15,14 +19,14 @@ namespace TeamoSharp
         public DiscordClient Client { get; private set; }
         //public InteractivityExtension Interactivity { get; private set; }
         public CommandsNextExtension Commands { get; private set; }
-        private readonly ILogger<DiscordBot> _logger;
+        private readonly ILogger _logger;
 
-        public DiscordBot(ILogger<DiscordBot> logger)
+        public DiscordBot()
         {
-            _logger = logger;
-            _logger.LogWarning("Creating DiscordBot");
+            var loggerFactory = LoggerFactory.Create(ConfigureLogging);
+            _logger = loggerFactory.CreateLogger<DiscordBot>();
 
-            var json = string.Empty;
+            _logger.LogWarning("Creating DiscordBot");
 
             var botToken = Environment.GetEnvironmentVariable("TEAMO_BOT_TOKEN");
             if (botToken is null)
@@ -68,8 +72,10 @@ namespace TeamoSharp
             _logger.LogWarning("Commands created");
         }
 
-        public void CreateCallbacks(IMainService mainService)
+        public void CreateCallbacks(IServiceProvider services)
         {
+            var mainService = services.GetRequiredService<IMainService>();
+
             Client.MessageReactionAdded += async args =>
             {
                 if (args.User.IsCurrent)
@@ -79,11 +85,13 @@ namespace TeamoSharp
                 if (emoji.IsNumberEmoji())
                 {
                     var numPlayers = emoji.GetAsNumber();
-                    await mainService.AddMemberAsync(args.User.Id.ToString(),
-                                                     args.Channel.Id.ToString(),
-                                                     args.Guild.Id.ToString(),
-                                                     args.Message.Id.ToString(),
-                                                     numPlayers);
+                    var member = new Entities.Member
+                    {
+                        ClientUserId = args.User.Id.ToString(),
+                        NumPlayers = numPlayers
+                    };
+                    var message = args.Message.AsEntityType();
+                    await mainService.AddMemberAsync(member, message);
                 }
                 else if (args.Emoji.IsCancelEmoji())
                 {
@@ -94,6 +102,11 @@ namespace TeamoSharp
             Client.MessageReactionRemoved += async args =>
             {
             };
+        }
+
+        public async Task ConnectAsync()
+        {
+            await Client.ConnectAsync();
         }
 
         private Task OnClientReady(ReadyEventArgs e)

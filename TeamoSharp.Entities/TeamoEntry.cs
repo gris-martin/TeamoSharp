@@ -1,23 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
+using System.Text;
 
-namespace TeamoSharp.DataAccessLayer.Models
+namespace TeamoSharp.Entities
 {
-    public class Post
+    public class TeamoEntry
     {
-        public int PostId { get; set; }
-
-        [Required]
+        public int? Id { get; set; }
         public ClientMessage Message { get; set; }
-
-        [Required]
         public string Game { get; set; }
-        [Required]
         public List<Member> Members { get; set; } = new List<Member>();
-        [Required]
         public DateTime EndDate { get; set; }
-        [Required]
         public int MaxPlayers { get; set; }
     }
 }

@@ -24,17 +24,27 @@ namespace TeamoSharp.Commands
         [Description("Create a new teamo")]
         public async Task Create(CommandContext ctx)
         {
-            DateTime endDate = DateTime.Now + new TimeSpan(0, 0, 20);
-            string game = "League of LoL";
-            int maxPlayers = 5;
-            var channel = ctx.Channel;
+            var message = new Entities.ClientMessage
+            {
+                ChannelId = ctx.Channel.Id.ToString(),
+                ServerId = ctx.Guild.Id.ToString()
+            };
+
+            var teamoEntry = new Entities.TeamoEntry
+            {
+                EndDate = DateTime.Now + new TimeSpan(0, 0, 20),
+                Game = "League of LoL",
+                MaxPlayers = 5,
+                Message = message
+            };
+
             try
             {
-                await _playService.CreateAsync(endDate, maxPlayers, game, channel.Id.ToString(), ctx.Guild.Id.ToString());
+                await _playService.CreateAsync(teamoEntry);
             }
             catch (Exception e)
             {
-                await PostExceptionMessageAsync(channel, _logger, e, "Could not create a new teamo :(");
+                await PostExceptionMessageAsync(ctx.Channel, _logger, e, "Could not create a new teamo :(");
                 return;
             }
         }
@@ -66,7 +76,7 @@ namespace TeamoSharp.Commands
                 {
                     if (int.TryParse(args, out int maxPlayers))
                     {
-                        await _playService.EditNumPlayersAsync(maxPlayers, postId);
+                        await _playService.EditMaxPlayresAsync(maxPlayers, postId);
                     }
                     else
                     {

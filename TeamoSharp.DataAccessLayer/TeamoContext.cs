@@ -21,114 +21,96 @@ namespace TeamoSharp.DataAccessLayer
         protected override void OnConfiguring(DbContextOptionsBuilder options)
         {
             options.UseSqlite("Data Source=teamo.db");
+            options.EnableSensitiveDataLogging();
         }
 
-        public async Task<Post> AddMemberAsync(string userId, int numPlayers, string messageId, string channelId = null, string serverId = null)
+        public async Task<Entities.TeamoEntry> AddMemberAsync(Entities.Member member, Entities.ClientMessage message)
         {
             _logger.LogInformation("Adding member!\n" +
-                $"message id: {messageId}\n" +
-                $"channel id: {channelId}\n" +
-                $"server id: {serverId}\n"
+                $"message id: {message.MessageId}\n" +
+                $"channel id: {message.ChannelId}\n" +
+                $"server id: {message.ServerId}\n"
             );
 
             var post = Posts.Single(
                 (a) => 
-                    a.Message.MessageId == messageId && 
-                    a.Message.ChannelId == channelId && 
-                    a.Message.ServerId == serverId
+                    a.Message.MessageId == message.MessageId && 
+                    a.Message.ChannelId == message.ChannelId && 
+                    a.Message.ServerId == message.ServerId
             ); 
 
-            if (post.Members.Exists((a) => a.ClientUserId == userId))
+            if (post.Members.Exists((a) => a.ClientUserId == member.ClientUserId))
             {
-                _logger.LogWarning($"Trying to add member {userId} to database, but member already exists. Updating numPlayers instead.");
-                post.Members.Single((a) => a.ClientUserId == userId).NumPlayers = numPlayers;
+                _logger.LogWarning($"Trying to add member {member.ClientUserId} to database, but member already exists. Updating numPlayers instead.");
+                post.Members.Single((a) => a.ClientUserId == member.ClientUserId).NumPlayers = member.NumPlayers;
             }
             else
             {
                 post.Members.Add(new Member()
                 {
-                    ClientUserId = userId,
-                    NumPlayers = numPlayers
+                    ClientUserId = member.ClientUserId,
+                    NumPlayers = member.NumPlayers
                 });
             }
             await SaveChangesAsync();
-            return post;
+            return post.AsEntityType();
         }
 
-        public async Task<Post> CreateAsync(Post post)
+        public async Task<Entities.TeamoEntry> CreateAsync(Entities.TeamoEntry entry)
         {
-            if (post.PostId != 0)
+            if (entry.Id != null)
             {
                 // TODO: Better exception
                 throw new Exception("Cannot create a new database post with non-zero ID");
             }
-            var entry = await Posts.AddAsync(post);
+            var post = await Posts.AddAsync(entry.AsModelType());
             await SaveChangesAsync();
             _logger.LogDebug($"Database entry " +
-                $"{post.Message.ChannelId} : " +
-                $"{post.Message.MessageId} : " +
-                $"{post.Message.ServerId} created. " +
-                $"Post id: {entry.Entity.PostId}");
-            return entry.Entity;
-        }
-
-        public async Task<Post> CreateAsync(DateTime date, int numPlayers, string game, string messageId, string channelId = null, string serverId = null)
-        {
-            _logger.LogDebug($"Creating new database entry. {date}; {numPlayers}; {game}; {messageId}; {channelId}; {serverId}");
-            var message = new ClientMessage
-            {
-                MessageId = messageId,
-                ChannelId = channelId,
-                ServerId = serverId
-            };
-            var post = new Post
-            {
-                EndDate = date,
-                MaxPlayers = numPlayers,
-                Game = game,
-                Message = message
-            };
-            return await CreateAsync(post);
+                $"{entry.Message.ChannelId} : " +
+                $"{entry.Message.MessageId} : " +
+                $"{entry.Message.ServerId} created. " +
+                $"Post id: {post.Entity.PostId}");
+            return post.Entity.AsEntityType();
         }
 
         public async Task DeleteAsync(int postId)
         {
             _logger.LogDebug($"Deleting database entry {postId}...");
-            var post = GetPost(postId);
-            Posts.Remove(post);
+            var post = GetEntry(postId);
+            Posts.Remove(post.AsModelType());
             int status = await SaveChangesAsync();
             var numPosts = Posts.Count();
             _logger.LogDebug($"Database entry {postId} deleted. Status: {status}. Num posts: {numPosts}");
         }
 
-        public async Task<Post> EditDateAsync(DateTime date, int postId)
+        public async Task<Entities.TeamoEntry> EditDateAsync(DateTime date, int postId)
         {
-            var post = GetPost(postId);
+            var post = GetEntry(postId);
             post.EndDate = date;
             await SaveChangesAsync();
             return post;
         }
 
-        public async Task<Post> EditGameAsync(string game, int postId)
+        public async Task<Entities.TeamoEntry> EditGameAsync(string game, int postId)
         {
-            var post = GetPost(postId);
+            var post = GetEntry(postId);
             post.Game = game;
             await SaveChangesAsync();
             return post;
         }
 
-        public async Task<Post> EditNumPlayersAsync(int numPlayers, int postId)
+        public async Task<Entities.TeamoEntry> EditNumPlayersAsync(int numPlayers, int postId)
         {
-            var post = GetPost(postId);
+            var post = GetEntry(postId);
             post.MaxPlayers = numPlayers;
             await SaveChangesAsync();
             return post;
         }
 
-        public Post GetPost(int postId)
+        public Entities.TeamoEntry GetEntry(int postId)
         {
             var post = Posts.Single(a => a.PostId == postId);
-            return post;
+            return post.AsEntityType();
         }
 
         public Task<Post> RemoveMemberAsync(ulong userId, int numPlayers, ulong messageId, ulong channelId)
