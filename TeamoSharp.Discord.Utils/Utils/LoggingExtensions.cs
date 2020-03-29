@@ -1,5 +1,6 @@
 ﻿using DSharpPlus.EventArgs;
 using Microsoft.Extensions.Logging;
+using System;
 
 namespace TeamoSharp.Utils
 {
@@ -25,7 +26,7 @@ namespace TeamoSharp.Utils
                     logger.LogCritical(e.Exception, e.Message);
                     break;
                 default:
-                    break;
+                    throw new Exception("Unknown log level!", e.Exception);
             }
         }
     }

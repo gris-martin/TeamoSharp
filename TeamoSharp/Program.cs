@@ -1,13 +1,10 @@
-﻿using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
 using System.Globalization;
 using System.Threading.Tasks;
 using TeamoSharp.DataAccessLayer;
 using TeamoSharp.Services;
-using static TeamoSharp.Utils.LoggerCreationUtils;
 
 namespace TeamoSharp
 {
@@ -19,11 +16,34 @@ namespace TeamoSharp
             CultureInfo.DefaultThreadCurrentCulture = culture;
             CultureInfo.DefaultThreadCurrentUICulture = culture;
 
-            await Discord.Startup.CreateBotServicesAsync();
+            var deps = new ServiceCollection()
+                .AddLogging(ConfigureLogging)
+                .AddSingleton(provider => new DiscordBot(provider.GetService<ILogger<DiscordBot>>()))
+                .AddDbContext<TeamoContext>()
+                .AddSingleton<IClientService, DiscordClientService>()
+                .AddSingleton<IMainService, MainService>();
+
+            var serviceProvider = deps.BuildServiceProvider();
+
+            var bot = serviceProvider.GetService<DiscordBot>();
+            bot.CreateCommands(serviceProvider);
+            bot.CreateCallbacks(serviceProvider);
+
+            await bot.ConnectAsync();
 
             await Task.Delay(-1);
+        }
 
-            //CreateHostBuilder(args).Build().Run();
+        public static void ConfigureLogging(ILoggingBuilder logging)
+        {
+            logging.SetMinimumLevel(LogLevel.Debug);
+            logging.AddConsole(ConfigureConsole);
+        }
+
+        private static void ConfigureConsole(ConsoleLoggerOptions console)
+        {
+            console.IncludeScopes = true;
+            console.TimestampFormat = "yyyy-MM-dd HH:mm ";
         }
 
         //public static IHostBuilder CreateHostBuilder(string[] args)

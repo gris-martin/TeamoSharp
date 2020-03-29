@@ -17,10 +17,10 @@ namespace TeamoSharp.Services
         private readonly ILogger _logger;
         private readonly DiscordClient _client;
 
-        public DiscordClientService(ILogger<DiscordClientService> logger, DiscordClient client)
+        public DiscordClientService(ILogger<DiscordClientService> logger, DiscordBot bot)
         {
             _logger = logger;
-            _client = client;
+            _client = bot.Client;
         }
 
         public async Task<Entities.ClientMessage> CreateMessageAsync(Entities.TeamoEntry entry)

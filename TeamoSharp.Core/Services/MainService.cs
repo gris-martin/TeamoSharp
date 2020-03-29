@@ -55,7 +55,7 @@ namespace TeamoSharp.Services
                 _logger.LogInformation($"New entry created: {message.ServerId}; {message.ChannelId}; {message.MessageId}");
                 await _clientService.UpdateMessageAsync(entry);
             }
-            catch (Exception e)
+            catch
             {
                 await _clientService.DeleteMessageAsync(message);
                 throw;

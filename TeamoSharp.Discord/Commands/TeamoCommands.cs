@@ -13,8 +13,7 @@ namespace TeamoSharp.Commands
         private readonly ILogger _logger;
         private readonly IMainService _playService;
 
-        public TeamoCommands(
-            ILogger<TeamoCommands> logger, IMainService playService)
+        public TeamoCommands(ILogger<TeamoCommands> logger, IMainService playService)
         {
             _logger = logger;
             _playService = playService;

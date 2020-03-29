@@ -9,7 +9,6 @@ using System.Threading.Tasks;
 using TeamoSharp.Discord.Utils.Utils;
 using TeamoSharp.Services;
 using TeamoSharp.Utils;
-using static TeamoSharp.Utils.LoggerCreationUtils;
 
 
 namespace TeamoSharp
@@ -21,12 +20,11 @@ namespace TeamoSharp
         public CommandsNextExtension Commands { get; private set; }
         private readonly ILogger _logger;
 
-        public DiscordBot()
+        public DiscordBot(ILogger<DiscordBot> logger)
         {
-            var loggerFactory = LoggerFactory.Create(ConfigureLogging);
-            _logger = loggerFactory.CreateLogger<DiscordBot>();
-
+            _logger = logger;
             _logger.LogWarning("Creating DiscordBot");
+
 
             var botToken = Environment.GetEnvironmentVariable("TEAMO_BOT_TOKEN");
             if (botToken is null)
@@ -52,7 +50,6 @@ namespace TeamoSharp
                 if (e.Message.Content.ToLower(CultureInfo.CurrentCulture).StartsWith("ping", StringComparison.Ordinal))
                     await e.Message.RespondAsync("pong!").ConfigureAwait(false);
             };
-            _logger.LogWarning("DiscordBot created");
         }
 
         public void CreateCommands(IServiceProvider services)
@@ -74,7 +71,7 @@ namespace TeamoSharp
 
         public void CreateCallbacks(IServiceProvider services)
         {
-            var mainService = services.GetRequiredService<IMainService>();
+            var mainService = services.GetService<IMainService>();
 
             Client.MessageReactionAdded += async args =>
             {
