@@ -43,7 +43,7 @@ namespace TeamoSharp
         private static void ConfigureConsole(ConsoleLoggerOptions console)
         {
             console.IncludeScopes = true;
-            console.TimestampFormat = "yyyy-MM-dd HH:mm ";
+            console.TimestampFormat = "yyyy-MM-dd HH:mm:ss ";
         }
 
         //public static IHostBuilder CreateHostBuilder(string[] args)
