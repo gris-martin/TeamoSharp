@@ -2,22 +2,10 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using System.Timers;
 using TeamoSharp.DataAccessLayer;
 
 namespace TeamoSharp.Services
 {
-    public class TimersHolder
-    {
-        public TimersHolder(Timer updateTimer, Timer startTimer)
-        {
-            UpdateTimer = updateTimer;
-            StartTimer = startTimer;
-        }
-
-        public Timer UpdateTimer { get; private set; }
-        public Timer StartTimer { get; private set; }
-    }
 
     public class MainService : IMainService
     {
@@ -25,14 +13,14 @@ namespace TeamoSharp.Services
         private readonly TeamoContext _dbContext;
         private readonly IClientService _clientService;
 
-        private readonly IDictionary<int, TimersHolder> _timers;
+        private readonly IDictionary<int, Timers> _timers;
 
         public MainService(ILogger<MainService> logger, TeamoContext dbContext, IClientService discordService)
         {
             _logger = logger;
             _dbContext= dbContext;
             _clientService = discordService;
-            _timers = new Dictionary<int, TimersHolder>();
+            _timers = new Dictionary<int, Timers>();
         }
 
         public async Task AddMemberAsync(Entities.Member member, Entities.ClientMessage message)
@@ -67,53 +55,38 @@ namespace TeamoSharp.Services
                 throw new Exception("Newly created Discord message got a null Id!");
             }
 
-            // Create update timer
-            var updateTimer = new Timer(5000);
-            updateTimer.Elapsed += async (sender, e) =>
+
+            // Create timers
+            var entryId = entry.Id.Value;
+            double updateInterval = 5000.0;
+            var endDate = entry.EndDate;
+            async Task updateFunc()
             {
-                _logger.LogDebug($"Updating {entry.Id}");
-                var dbEntry = _dbContext.GetEntry(entry.Id.Value);
-                _logger.LogDebug($"Got dbPost {entry.Id}");
+                var dbEntry = _dbContext.GetEntry(entryId);
                 await _clientService.UpdateMessageAsync(dbEntry);
-                _logger.LogDebug($"Updating done {entry.Id}");
-            };
-            updateTimer.AutoReset = true;
-            updateTimer.Start();
-
-            // Create start timer
-            var startTimer = new Timer((entry.EndDate - DateTime.Now).TotalMilliseconds);
-            startTimer.Elapsed += async (sender, e) =>
+            }
+            async Task startFunc()
             {
-                _logger.LogDebug($"Timer done! {entry.Id}");
-                var dbPost = _dbContext.GetEntry(entry.Id.Value);
-                _logger.LogDebug($"Got dbentry {entry.Id}");
-                await _clientService.CreateStartMessageAsync(dbPost);
-                _logger.LogDebug($"Start message created {entry.Id}");
-                await DeleteAsync(dbPost.Id.Value);
-                _logger.LogDebug($"Entry deleted {entry.Id}");
-            };
-            startTimer.AutoReset = false;
-            startTimer.Start();
-
-            var timersHolder = new TimersHolder(updateTimer, startTimer);
-            _timers.Add(entry.Id.Value, timersHolder);
+                _logger.LogInformation($"Creating start message for entry {entryId}");
+                var dbEntry = _dbContext.GetEntry(entryId);
+                await _clientService.CreateStartMessageAsync(dbEntry);
+                await DeleteAsync(entryId);
+                _logger.LogInformation($"Successfully created start message for {entryId}");
+            }
+            var timers = new Timers(updateInterval, endDate, updateFunc, startFunc);
+            timers.Start();
+            _timers.Add(entryId, timers);
         }
 
         public async Task DeleteAsync(int postId)
         {
-            _logger.LogDebug($"Deleting entry and timers");
             var timersHolder = _timers[postId];
-            timersHolder.UpdateTimer.Stop();
-            timersHolder.StartTimer.Stop();
+            timersHolder.Stop();
             _timers.Remove(postId);
-            _logger.LogDebug($"Timers deleted");
 
             var post = _dbContext.GetEntry(postId);
-            _logger.LogDebug($"Got dbentry");
             await _clientService.DeleteMessageAsync(post.Message);
-            _logger.LogDebug($"Deleted client message");
             await _dbContext.DeleteAsync(postId);
-            _logger.LogDebug($"Deleted dbentry");
         }
 
         public async Task EditDateAsync(DateTime date, int postId)
