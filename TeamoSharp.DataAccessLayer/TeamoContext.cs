@@ -76,8 +76,9 @@ namespace TeamoSharp.DataAccessLayer
         public async Task DeleteAsync(int postId)
         {
             _logger.LogDebug($"Deleting database entry {postId}...");
-            var post = GetEntry(postId);
-            Posts.Remove(post.AsModelType());
+            var post = GetPost(postId);
+            _logger.LogDebug($"Got entry {post.PostId}...");
+            Posts.Remove(post);
             int status = await SaveChangesAsync();
             var numPosts = Posts.Count();
             _logger.LogDebug($"Database entry {postId} deleted. Status: {status}. Num posts: {numPosts}");
@@ -85,32 +86,38 @@ namespace TeamoSharp.DataAccessLayer
 
         public async Task<Entities.TeamoEntry> EditDateAsync(DateTime date, int postId)
         {
-            var post = GetEntry(postId);
+            var post = GetPost(postId);
             post.EndDate = date;
             await SaveChangesAsync();
-            return post;
+            return post.AsEntityType();
         }
 
         public async Task<Entities.TeamoEntry> EditGameAsync(string game, int postId)
         {
-            var post = GetEntry(postId);
+            var post = GetPost(postId);
             post.Game = game;
             await SaveChangesAsync();
-            return post;
+            return post.AsEntityType();
         }
 
         public async Task<Entities.TeamoEntry> EditNumPlayersAsync(int numPlayers, int postId)
         {
-            var post = GetEntry(postId);
+            var post = GetPost(postId);
             post.MaxPlayers = numPlayers;
             await SaveChangesAsync();
-            return post;
+            return post.AsEntityType();
         }
 
         public Entities.TeamoEntry GetEntry(int postId)
         {
             var post = Posts.Single(a => a.PostId == postId);
             return post.AsEntityType();
+        }
+
+        public Post GetPost(int postId)
+        {
+            var post = Posts.Single(a => a.PostId == postId);
+            return post;
         }
 
         public Task<Post> RemoveMemberAsync(ulong userId, int numPlayers, ulong messageId, ulong channelId)
