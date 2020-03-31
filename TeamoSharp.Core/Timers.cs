@@ -6,9 +6,6 @@ namespace TeamoSharp
 {
     public class Timers
     {
-        public event EventHandler<ElapsedEventArgs> Update;
-        public event EventHandler<ElapsedEventArgs> StartTimeReached;
-
         private DateTime EndDate { get; set; }
 
         public Timers(double updateInterval, DateTime endDate, Func<Task> updateActionAsync, Func<Task> endActionAsync)
