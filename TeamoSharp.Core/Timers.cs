@@ -1,30 +1,48 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
+using System;
 using System.Threading.Tasks;
 using System.Timers;
+using TeamoSharp.DataAccessLayer;
+using TeamoSharp.Entities;
+using TeamoSharp.Services;
 
-namespace TeamoSharp
+namespace TeamoSharp.Core
 {
     public class Timers
     {
-        private DateTime EndDate { get; set; }
+        private readonly Timer _updateTimer;
+        private readonly Timer _startTimer;
+        private readonly TeamoEntry _entry;
+        private readonly ILogger _logger;
+        private readonly System.Threading.SemaphoreSlim _semaphore;
+        private readonly TeamoContext _context;
+        private readonly IClientService _clientService;
 
-        public Timers(double updateInterval, DateTime endDate, Func<Task> updateActionAsync, Func<Task> endActionAsync)
+        public event EventHandler<ElapsedEventArgs> TimerFinished;
+
+        public Timers(double updateInterval, TeamoEntry entry, TeamoContext context, IClientService clientService, ILogger logger)
         {
             _semaphore = new System.Threading.SemaphoreSlim(1, 1);
+            _context = context;
+            _clientService = clientService;
+            _entry = entry;
+            _logger = logger;
+            var entryId = _entry.Id.Value;
 
             // Update timer
-            UpdateTimer = new Timer
+            _updateTimer = new Timer
             {
                 Interval = updateInterval,
                 AutoReset = true
             };
-            UpdateTimer.Elapsed += async (sender, e) =>
+            _updateTimer.Elapsed += async (sender, e) =>
             {
                 Console.WriteLine("[TIMER] Updating");
                 await _semaphore.WaitAsync();
                 try
                 {
-                    await updateActionAsync();
+                    var dbEntry = _context.GetEntry(entryId);
+                    await _clientService.UpdateMessageAsync(dbEntry);
                 }
                 finally
                 {
@@ -34,19 +52,25 @@ namespace TeamoSharp
 
 
             // Start timer
-            EndDate = endDate;
-            StartTimer = new Timer
+            _startTimer = new Timer
             {
                 AutoReset = false
             };
-            StartTimer.Elapsed += async (sender, e) =>
+            _startTimer.Elapsed += async (sender, e) =>
             {
                 Console.WriteLine("[TIMER] Finished");
                 await _semaphore.WaitAsync();
                 try
                 {
-                    UpdateTimer.Stop();
-                    await endActionAsync();
+                    _updateTimer.Stop();
+                    _logger.LogInformation($"Creating start message for entry {entryId}");
+                    var dbEntry = _context.GetEntry(entryId);
+                    await _clientService.DeleteMessageAsync(entry.Message);
+                    await _clientService.CreateStartMessageAsync(dbEntry);
+                    await _context.DeleteAsync(entry.Id.Value);
+                    EventHandler<ElapsedEventArgs> handler = TimerFinished;
+                    handler?.Invoke(sender, e);
+                    _logger.LogInformation($"Successfully created start message for {entryId}");
                 }
                 finally
                 {
@@ -56,32 +80,95 @@ namespace TeamoSharp
 
         }
 
-        public void ChangeEndDate(DateTime date)
-        {
-            double timeLeftMs = (date - DateTime.Now).TotalMilliseconds;
-            // TODO: Exception/Error handling
-            if (timeLeftMs <= 0)
-                throw new Exception("Cannot change start to a time before now!");
 
-            StartTimer.Interval = timeLeftMs;
+        public async Task EditDateAsync(DateTime date)
+        {
+            // TODO: Better exception
+            await _semaphore.WaitAsync();
+            try
+            {
+                if (date <= DateTime.Now)
+                    throw new Exception($"Cannot change to a date and time before now! Current date: {DateTime.Now}. Desired date: {date}");
+                _startTimer.Interval = (date - DateTime.Now).TotalMilliseconds;
+                var entry = await _context.EditDateAsync(date, _entry.Id.Value);
+                await _clientService.UpdateMessageAsync(entry);
+            }
+            finally
+            {
+                _semaphore.Release();
+            }
         }
 
-        public Timer UpdateTimer { get; private set; }
-        public Timer StartTimer { get; private set; }
+        public async Task EditMaxPlayersAsync(int numPlayers)
+        {
+            await _semaphore.WaitAsync();
+            try
+            {
+                if (numPlayers < 2)
+                    throw new Exception($"Invalid number of players. The number of players must be between 2 and {int.MaxValue}");
+                var post = await _context.EditNumPlayersAsync(numPlayers, _entry.Id.Value);
+                await _clientService.UpdateMessageAsync(post);
+            }
+            finally
+            {
+                _semaphore.Release();
+            }
+        }
 
-        private readonly System.Threading.SemaphoreSlim _semaphore;
+        public async Task EditGameAsync(string game)
+        {
+            await _semaphore.WaitAsync();
+            try
+            {
+                // TODO: Specify max length of game name somewhere
+                if (game.Length > 40)
+                    throw new Exception($"Game name too long ({game.Length} characters)! Maximum number of characters is 40");
+                var post = await _context.EditGameAsync(game, _entry.Id.Value);
+                await _clientService.UpdateMessageAsync(post);
+            }
+            finally
+            {
+                _semaphore.Release();
+            }
+        }
+
+        public async Task AddMemberAsync(Member member)
+        {
+            await _semaphore.WaitAsync();
+            try
+            {
+                var post = await _context.AddMemberAsync(member, _entry.Message);
+                await _clientService.UpdateMessageAsync(post);
+            }
+            finally
+            {
+                _semaphore.Release();
+            }
+        }
+        //Task RemoveMemberAsync(string userId, ClientMessage message);
 
         internal void Start()
         {
-            StartTimer.Interval = (EndDate - DateTime.Now).TotalMilliseconds;
-            StartTimer.Start();
-            UpdateTimer.Start();
+            _startTimer.Interval = (_entry.EndDate - DateTime.Now).TotalMilliseconds;
+            _startTimer.Start();
+            _updateTimer.Start();
         }
 
-        internal void Stop()
+        public async Task StopAsync()
         {
-            UpdateTimer.Stop();
-            StartTimer.Stop();
+            await _semaphore.WaitAsync();
+            try
+            {
+                _updateTimer.Stop();
+                _startTimer.Stop();
+                var post = _context.GetEntry(_entry.Id.Value);
+                await _clientService.DeleteMessageAsync(post.Message);
+                await _context.DeleteAsync(_entry.Id.Value);
+            }
+            finally
+            {
+                _semaphore.Release();
+            }
         }
     }
 }

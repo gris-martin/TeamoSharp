@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using TeamoSharp.Core;
 using TeamoSharp.DataAccessLayer;
 
 namespace TeamoSharp.Services
@@ -25,8 +26,9 @@ namespace TeamoSharp.Services
 
         public async Task AddMemberAsync(Entities.Member member, Entities.ClientMessage message)
         {
-            var post = await _dbContext.AddMemberAsync(member, message);
-            await _clientService.UpdateMessageAsync(post);
+            var entry = _dbContext.GetEntry(message);
+            var timers = _timers[entry.Id.Value];
+            await timers.AddMemberAsync(member);
         }
 
         public async Task CreateAsync(Entities.TeamoEntry entry)
@@ -57,62 +59,37 @@ namespace TeamoSharp.Services
 
 
             // Create timers
-            var entryId = entry.Id.Value;
             double updateInterval = 5000.0;
-            var endDate = entry.EndDate;
-            async Task updateFunc()
-            {
-                var dbEntry = _dbContext.GetEntry(entryId);
-                await _clientService.UpdateMessageAsync(dbEntry);
-            }
-            async Task startFunc()
-            {
-                _logger.LogInformation($"Creating start message for entry {entryId}");
-                var dbEntry = _dbContext.GetEntry(entryId);
-                await _clientService.CreateStartMessageAsync(dbEntry);
-                await DeleteAsync(entryId);
-                _logger.LogInformation($"Successfully created start message for {entryId}");
-            }
-            var timers = new Timers(updateInterval, endDate, updateFunc, startFunc);
+            var timers = new Timers(updateInterval, entry, _dbContext, _clientService, _logger);
+            timers.TimerFinished += (sender, e) => _timers.Remove(entry.Id.Value);
             timers.Start();
-            _timers.Add(entryId, timers);
+            _timers.Add(entry.Id.Value, timers);
         }
 
         public async Task DeleteAsync(int postId)
         {
-            var timersHolder = _timers[postId];
-            timersHolder.Stop();
+            var timers = _timers[postId];
+            await timers.StopAsync();
             _timers.Remove(postId);
 
-            var post = _dbContext.GetEntry(postId);
-            await _clientService.DeleteMessageAsync(post.Message);
-            await _dbContext.DeleteAsync(postId);
         }
 
         public async Task EditDateAsync(DateTime date, int postId)
         {
-            // TODO: Better exception
-            if (date <= DateTime.Now)
-                throw new Exception($"Cannot change to a date and time before now! Current date: {DateTime.Now}. Desired date: {date}");
-            _timers[postId].StartTimer.Interval = (date - DateTime.Now).TotalMilliseconds;
-            var entry = await _dbContext.EditDateAsync(date, postId);
-            await _clientService.UpdateMessageAsync(entry);
-        }
-
-        public async Task EditGameAsync(string game, int postId)
-        {
-            if (game.Length > 40)
-                throw new Exception($"Game name too long ({game.Length} characters)! Maximum number of characters is 40");
-            var post = await _dbContext.EditGameAsync(game, postId);
-            await _clientService.UpdateMessageAsync(post);
+            var timer = _timers[postId];
+            await timer.EditDateAsync(date);
         }
 
         public async Task EditMaxPlayersAsync(int numPlayers, int postId)
         {
-            if (numPlayers < 2)
-                throw new Exception($"Invalid number of players. The number of players must be between 2 and {int.MaxValue}");
-            var post = await _dbContext.EditNumPlayersAsync(numPlayers, postId);
-            await _clientService.UpdateMessageAsync(post);
+            var timer = _timers[postId];
+            await timer.EditMaxPlayersAsync(numPlayers);
+        }
+
+        public async Task EditGameAsync(string game, int postId)
+        {
+            var timer = _timers[postId];
+            await timer.EditGameAsync(game);
         }
 
         public Task RemoveMemberAsync(string userId, Entities.ClientMessage message)

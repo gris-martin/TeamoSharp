@@ -114,6 +114,17 @@ namespace TeamoSharp.DataAccessLayer
             return post.AsEntityType();
         }
 
+        public Entities.TeamoEntry GetEntry(Entities.ClientMessage message)
+        {
+            var post = Posts.Single(
+                (a) =>
+                    a.Message.MessageId == message.MessageId &&
+                    a.Message.ChannelId == message.ChannelId &&
+                    a.Message.ServerId == message.ServerId
+            );
+            return post.AsEntityType();
+        }
+
         public Post GetPost(int postId)
         {
             var post = Posts.Single(a => a.PostId == postId);
