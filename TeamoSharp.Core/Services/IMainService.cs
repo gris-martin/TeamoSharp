@@ -8,7 +8,7 @@ namespace TeamoSharp.Services
     {
         Task CreateAsync(TeamoEntry entry);
         Task EditDateAsync(DateTime date, int postId);
-        Task EditMaxPlayresAsync(int numPlayers, int postId);
+        Task EditMaxPlayersAsync(int numPlayers, int postId);
         Task EditGameAsync(string game, int postId);
         Task DeleteAsync(int postId);
         Task AddMemberAsync(Member member, ClientMessage message);

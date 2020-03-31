@@ -75,7 +75,7 @@ namespace TeamoSharp.Commands
                 {
                     if (int.TryParse(args, out int maxPlayers))
                     {
-                        await _playService.EditMaxPlayresAsync(maxPlayers, postId);
+                        await _playService.EditMaxPlayersAsync(maxPlayers, postId);
                     }
                     else
                     {

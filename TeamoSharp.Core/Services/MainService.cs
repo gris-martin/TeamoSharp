@@ -107,7 +107,7 @@ namespace TeamoSharp.Services
             await _clientService.UpdateMessageAsync(post);
         }
 
-        public async Task EditMaxPlayresAsync(int numPlayers, int postId)
+        public async Task EditMaxPlayersAsync(int numPlayers, int postId)
         {
             if (numPlayers < 2)
                 throw new Exception($"Invalid number of players. The number of players must be between 2 and {int.MaxValue}");
