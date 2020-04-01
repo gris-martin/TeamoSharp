@@ -22,11 +22,12 @@ namespace TeamoSharp.Core
 
         public Timers(double updateInterval, TeamoEntry entry, TeamoContext context, IClientService clientService, ILogger logger)
         {
-            _semaphore = new System.Threading.SemaphoreSlim(1, 1);
             _context = context;
             _clientService = clientService;
             _entry = entry;
             _logger = logger;
+
+            _semaphore = new System.Threading.SemaphoreSlim(1, 1);
             var entryId = _entry.Id.Value;
 
             // Update timer
