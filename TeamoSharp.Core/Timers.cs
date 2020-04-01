@@ -28,6 +28,7 @@ namespace TeamoSharp.Core
             _logger = logger;
 
             _semaphore = new System.Threading.SemaphoreSlim(1, 1);
+            bool isUpdating = false;
             var entryId = _entry.Id.Value;
 
             // Update timer
@@ -39,6 +40,8 @@ namespace TeamoSharp.Core
             _updateTimer.Elapsed += async (sender, e) =>
             {
                 Console.WriteLine("[TIMER] Updating");
+                if (isUpdating)
+                    return;
                 await _semaphore.WaitAsync();
                 try
                 {
