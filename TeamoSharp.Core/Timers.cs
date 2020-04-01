@@ -59,10 +59,10 @@ namespace TeamoSharp.Core
             _startTimer.Elapsed += async (sender, e) =>
             {
                 Console.WriteLine("[TIMER] Finished");
+                _updateTimer.Stop();
                 await _semaphore.WaitAsync();
                 try
                 {
-                    _updateTimer.Stop();
                     _logger.LogInformation($"Creating start message for entry {entryId}");
                     var dbEntry = _context.GetEntry(entryId);
                     await _clientService.DeleteMessageAsync(entry.Message);
@@ -156,11 +156,11 @@ namespace TeamoSharp.Core
 
         public async Task StopAsync()
         {
+            _updateTimer.Stop();
+            _startTimer.Stop();
             await _semaphore.WaitAsync();
             try
             {
-                _updateTimer.Stop();
-                _startTimer.Stop();
                 var post = _context.GetEntry(_entry.Id.Value);
                 await _clientService.DeleteMessageAsync(post.Message);
                 await _context.DeleteAsync(_entry.Id.Value);
