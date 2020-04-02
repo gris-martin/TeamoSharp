@@ -27,8 +27,7 @@ namespace TeamoSharp.Services
         public async Task AddMemberAsync(Entities.Member member, Entities.ClientMessage message)
         {
             var entry = _dbContext.GetEntry(message);
-            var timers = _timers[entry.Id.Value];
-            await timers.AddMemberAsync(member);
+            await _timers[entry.Id.Value].AddMemberAsync(member);
         }
 
         public async Task CreateAsync(Entities.TeamoEntry entry)

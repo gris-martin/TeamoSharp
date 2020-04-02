@@ -7,15 +7,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TeamoSharp", "TeamoSharp\Te
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TeamoSharp.DataAccessLayer", "TeamoSharp.DataAccessLayer\TeamoSharp.DataAccessLayer.csproj", "{61A01445-D056-40F8-B819-40B9D6A2EC62}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TeamoSharp.Entities", "TeamoSharp.Entities\TeamoSharp.Entities.csproj", "{435DB77C-E98C-4E6E-AFDC-6D54BFB561E6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TeamoSharp.Entities", "TeamoSharp.Entities\TeamoSharp.Entities.csproj", "{435DB77C-E98C-4E6E-AFDC-6D54BFB561E6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TeamoSharp.Discord", "TeamoSharp.Discord\TeamoSharp.Discord.csproj", "{DCACDD91-5FDC-483E-8675-01D78E103616}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TeamoSharp.Discord", "TeamoSharp.Discord\TeamoSharp.Discord.csproj", "{DCACDD91-5FDC-483E-8675-01D78E103616}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TeamoSharp.Core", "TeamoSharp.Core\TeamoSharp.Core.csproj", "{CBEA2DAC-309B-443E-8C1F-A507007C02C9}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TeamoSharp.Discord.Services", "TeamoSharp.Discord.Services\TeamoSharp.Discord.Services.csproj", "{33EB8EAE-F036-46AC-906C-C0AC0AEF4F0D}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TeamoSharp.Discord.Utils", "TeamoSharp.Discord.Utils\TeamoSharp.Discord.Utils.csproj", "{8A8FAC1A-DC2A-423C-B0A2-D6825A4ADE8B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TeamoSharp.Core", "TeamoSharp.Core\TeamoSharp.Core.csproj", "{CBEA2DAC-309B-443E-8C1F-A507007C02C9}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -43,14 +39,6 @@ Global
 		{CBEA2DAC-309B-443E-8C1F-A507007C02C9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CBEA2DAC-309B-443E-8C1F-A507007C02C9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CBEA2DAC-309B-443E-8C1F-A507007C02C9}.Release|Any CPU.Build.0 = Release|Any CPU
-		{33EB8EAE-F036-46AC-906C-C0AC0AEF4F0D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{33EB8EAE-F036-46AC-906C-C0AC0AEF4F0D}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{33EB8EAE-F036-46AC-906C-C0AC0AEF4F0D}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{33EB8EAE-F036-46AC-906C-C0AC0AEF4F0D}.Release|Any CPU.Build.0 = Release|Any CPU
-		{8A8FAC1A-DC2A-423C-B0A2-D6825A4ADE8B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{8A8FAC1A-DC2A-423C-B0A2-D6825A4ADE8B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{8A8FAC1A-DC2A-423C-B0A2-D6825A4ADE8B}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{8A8FAC1A-DC2A-423C-B0A2-D6825A4ADE8B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

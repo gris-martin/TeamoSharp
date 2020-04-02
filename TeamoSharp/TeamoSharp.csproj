@@ -14,7 +14,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\TeamoSharp.DataAccessLayer\TeamoSharp.DataAccessLayer.csproj" />
-    <ProjectReference Include="..\TeamoSharp.Discord.Services\TeamoSharp.Discord.Services.csproj" />
     <ProjectReference Include="..\TeamoSharp.Discord\TeamoSharp.Discord.csproj" />
   </ItemGroup>
 
