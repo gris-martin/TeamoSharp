@@ -47,7 +47,8 @@ namespace TeamoSharp.DataAccessLayer
                 _logger.LogInformation("Adding member!\n" +
                                        $"message id: {message.MessageId}\n" +
                                        $"channel id: {message.ChannelId}\n" +
-                                       $"server id: {message.ServerId}\n");
+                                       $"server id: {message.ServerId}\n"
+                );
 
                 var post = Posts.Single(
                     (a) =>

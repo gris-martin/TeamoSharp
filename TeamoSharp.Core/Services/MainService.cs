@@ -40,9 +40,7 @@ namespace TeamoSharp.Services
             // Create database entry
             try
             {
-                _logger.LogInformation($"Creating new entry: {message.ServerId}; {message.ChannelId}; {message.MessageId}");
                 entry = await _dbContext.CreateAsync(entry);
-                _logger.LogInformation($"New entry created: {message.ServerId}; {message.ChannelId}; {message.MessageId}");
                 await _clientService.UpdateMessageAsync(entry);
             }
             catch
