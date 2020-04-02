@@ -39,19 +39,15 @@ namespace TeamoSharp.Core
             };
             _updateTimer.Elapsed += async (sender, e) =>
             {
-                Console.WriteLine("[TIMER] Updating");
                 if (isUpdating)
                     return;
-                await _semaphore.WaitAsync();
-                try
+                Console.WriteLine($"[TIMER] Updating {entryId}");
+                await ExclusiveAsync(async () =>
                 {
                     var dbEntry = _context.GetEntry(entryId);
                     await _clientService.UpdateMessageAsync(dbEntry);
-                }
-                finally
-                {
-                    _semaphore.Release();
-                }
+                });
+                Console.WriteLine($"[TIMER] Update done {entryId}");
             };
 
 
@@ -62,10 +58,9 @@ namespace TeamoSharp.Core
             };
             _startTimer.Elapsed += async (sender, e) =>
             {
-                Console.WriteLine("[TIMER] Finished");
+                Console.WriteLine($"[TIMER] Starting finish {entryId}");
                 _updateTimer.Stop();
-                await _semaphore.WaitAsync();
-                try
+                await ExclusiveAsync(async () =>
                 {
                     _logger.LogInformation($"Creating start message for entry {entryId}");
                     var dbEntry = _context.GetEntry(entryId);
@@ -75,79 +70,68 @@ namespace TeamoSharp.Core
                     EventHandler<ElapsedEventArgs> handler = TimerFinished;
                     handler?.Invoke(sender, e);
                     _logger.LogInformation($"Successfully created start message for {entryId}");
-                }
-                finally
-                {
-                    _semaphore.Release();
-                }
+                });
+                Console.WriteLine($"[TIMER] Finished {entryId}");
             };
 
         }
 
-
-        public async Task EditDateAsync(DateTime date)
+        private async Task ExclusiveAsync(Func<Task> funcAsync)
         {
-            // TODO: Better exception
             await _semaphore.WaitAsync();
             try
+            {
+                await funcAsync();
+            }
+            finally
+            {
+                _semaphore.Release();
+            }
+        }
+
+        internal async Task EditDateAsync(DateTime date)
+        {
+            await ExclusiveAsync(async () =>
             {
                 if (date <= DateTime.Now)
                     throw new Exception($"Cannot change to a date and time before now! Current date: {DateTime.Now}. Desired date: {date}");
                 _startTimer.Interval = (date - DateTime.Now).TotalMilliseconds;
                 var entry = await _context.EditDateAsync(date, _entry.Id.Value);
                 await _clientService.UpdateMessageAsync(entry);
-            }
-            finally
-            {
-                _semaphore.Release();
-            }
+            });
         }
 
-        public async Task EditMaxPlayersAsync(int numPlayers)
+        internal async Task EditMaxPlayersAsync(int numPlayers)
         {
-            await _semaphore.WaitAsync();
-            try
+            await ExclusiveAsync(async () =>
             {
                 if (numPlayers < 2)
                     throw new Exception($"Invalid number of players. The number of players must be between 2 and {int.MaxValue}");
                 var post = await _context.EditNumPlayersAsync(numPlayers, _entry.Id.Value);
                 await _clientService.UpdateMessageAsync(post);
-            }
-            finally
-            {
-                _semaphore.Release();
-            }
+
+            });
         }
 
-        public async Task EditGameAsync(string game)
+        internal async Task EditGameAsync(string game)
         {
-            await _semaphore.WaitAsync();
-            try
+            await ExclusiveAsync(async () =>
             {
                 // TODO: Specify max length of game name somewhere
                 if (game.Length > 40)
                     throw new Exception($"Game name too long ({game.Length} characters)! Maximum number of characters is 40");
                 var post = await _context.EditGameAsync(game, _entry.Id.Value);
                 await _clientService.UpdateMessageAsync(post);
-            }
-            finally
-            {
-                _semaphore.Release();
-            }
+            });
         }
 
-        public async Task AddMemberAsync(Member member)
+        internal async Task AddMemberAsync(Member member)
         {
-            await _semaphore.WaitAsync();
-            try
+            await ExclusiveAsync(async () =>
             {
                 var post = await _context.AddMemberAsync(member, _entry.Message);
                 await _clientService.UpdateMessageAsync(post);
-            }
-            finally
-            {
-                _semaphore.Release();
-            }
+            });
         }
         //Task RemoveMemberAsync(string userId, ClientMessage message);
 
@@ -158,21 +142,16 @@ namespace TeamoSharp.Core
             _updateTimer.Start();
         }
 
-        public async Task StopAsync()
+        internal async Task StopAsync()
         {
             _updateTimer.Stop();
             _startTimer.Stop();
-            await _semaphore.WaitAsync();
-            try
+            await ExclusiveAsync(async () =>
             {
                 var post = _context.GetEntry(_entry.Id.Value);
                 await _clientService.DeleteMessageAsync(post.Message);
                 await _context.DeleteAsync(_entry.Id.Value);
-            }
-            finally
-            {
-                _semaphore.Release();
-            }
+            });
         }
     }
 }

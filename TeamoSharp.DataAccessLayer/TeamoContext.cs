@@ -27,16 +27,27 @@ namespace TeamoSharp.DataAccessLayer
             options.EnableSensitiveDataLogging();
         }
 
-        public async Task<Entities.TeamoEntry> AddMemberAsync(Entities.Member member, Entities.ClientMessage message)
+        private async Task<TResult> ExclusiveAsync<TResult>(Func<Task<TResult>> funcAsync)
         {
             await _semaphore.WaitAsync();
             try
             {
+                return await funcAsync();
+            }
+            finally
+            {
+                _semaphore.Release();
+            }
+        }
+
+        public async Task<Entities.TeamoEntry> AddMemberAsync(Entities.Member member, Entities.ClientMessage message)
+        {
+            return await ExclusiveAsync(async () =>
+            {
                 _logger.LogInformation("Adding member!\n" +
-            $"message id: {message.MessageId}\n" +
-            $"channel id: {message.ChannelId}\n" +
-            $"server id: {message.ServerId}\n"
-        );
+                                       $"message id: {message.MessageId}\n" +
+                                       $"channel id: {message.ChannelId}\n" +
+                                       $"server id: {message.ServerId}\n");
 
                 var post = Posts.Single(
                     (a) =>
@@ -60,18 +71,12 @@ namespace TeamoSharp.DataAccessLayer
                 }
                 await SaveChangesAsync();
                 return post.AsEntityType();
-
-            }
-            finally
-            {
-                _semaphore.Release();
-            }      
+            });
         }
 
         public async Task<Entities.TeamoEntry> CreateAsync(Entities.TeamoEntry entry)
         {
-            await _semaphore.WaitAsync();
-            try
+            return await ExclusiveAsync(async () =>
             {
                 if (entry.Id != null)
                 {
@@ -86,11 +91,7 @@ namespace TeamoSharp.DataAccessLayer
                     $"{entry.Message.ServerId} created. " +
                     $"Post id: {post.Entity.PostId}");
                 return post.Entity.AsEntityType();
-            }
-            finally
-            {
-                _semaphore.Release();
-            }
+            });
         }
 
         public async Task DeleteAsync(int postId)
@@ -98,13 +99,9 @@ namespace TeamoSharp.DataAccessLayer
             await _semaphore.WaitAsync();
             try
             {
-                _logger.LogDebug($"Deleting database entry {postId}...");
                 var post = GetPost(postId);
-                _logger.LogDebug($"Got entry {post.PostId}...");
                 Posts.Remove(post);
-                int status = await SaveChangesAsync();
-                var numPosts = Posts.Count();
-                _logger.LogDebug($"Database entry {postId} deleted. Status: {status}. Num posts: {numPosts}");
+                await SaveChangesAsync();
             }
             finally
             {
@@ -114,50 +111,35 @@ namespace TeamoSharp.DataAccessLayer
 
         public async Task<Entities.TeamoEntry> EditDateAsync(DateTime date, int postId)
         {
-            await _semaphore.WaitAsync();
-            try
+            return await ExclusiveAsync(async () =>
             {
                 var post = GetPost(postId);
                 post.EndDate = date;
                 await SaveChangesAsync();
                 return post.AsEntityType();
-            }
-            finally
-            {
-                _semaphore.Release();
-            }
+            });
         }
 
         public async Task<Entities.TeamoEntry> EditGameAsync(string game, int postId)
         {
-            await _semaphore.WaitAsync();
-            try
+            return await ExclusiveAsync(async () =>
             {
                 var post = GetPost(postId);
                 post.Game = game;
                 await SaveChangesAsync();
                 return post.AsEntityType();
-            }
-            finally
-            {
-                _semaphore.Release();
-            }
+            });
         }
 
         public async Task<Entities.TeamoEntry> EditNumPlayersAsync(int numPlayers, int postId)
         {
-            await _semaphore.WaitAsync();
-            try
+            return await ExclusiveAsync(async () =>
             {
                 var post = GetPost(postId);
                 post.MaxPlayers = numPlayers;
                 await SaveChangesAsync();
                 return post.AsEntityType();
-            }
-            finally
-            {
-                _semaphore.Release();
-            }
+            });
         }
 
         public Entities.TeamoEntry GetEntry(int postId)
