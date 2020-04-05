@@ -21,9 +21,19 @@ namespace TeamoSharp.DataAccessLayer
             _logger = logger;
         }
 
+        public TeamoContext(ILogger<TeamoContext> logger, DbContextOptions<TeamoContext> options) : base(options)
+        {
+            _semaphore = new SemaphoreSlim(1, 1);
+            _logger = logger;
+        }
+
+
         protected override void OnConfiguring(DbContextOptionsBuilder options)
         {
-            options.UseSqlite("Data Source=teamo.db");
+            if (!options.IsConfigured)
+            {
+                options.UseSqlite("Data Source=teamo.db");
+            }
             options.EnableSensitiveDataLogging();
         }
 

@@ -6,7 +6,7 @@ namespace TeamoSharp.Services
 {
     public interface IMainService
     {
-        Task CreateAsync(TeamoEntry entry);
+        Task<TeamoEntry> CreateAsync(TeamoEntry entry);
         Task EditDateAsync(DateTime date, int postId);
         Task EditMaxPlayersAsync(int numPlayers, int postId);
         Task EditGameAsync(string game, int postId);

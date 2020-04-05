@@ -30,7 +30,7 @@ namespace TeamoSharp.Services
             await _timers[entry.Id.Value].AddMemberAsync(member);
         }
 
-        public async Task CreateAsync(Entities.TeamoEntry entry)
+        public async Task<Entities.TeamoEntry> CreateAsync(Entities.TeamoEntry entry)
         {
             // Create Discord message
             var message = await _clientService.CreateMessageAsync(entry);
@@ -61,6 +61,8 @@ namespace TeamoSharp.Services
             timers.TimerFinished += (sender, e) => _timers.Remove(entry.Id.Value);
             timers.Start();
             _timers.Add(entry.Id.Value, timers);
+
+            return entry;
         }
 
         public async Task DeleteAsync(int postId)
